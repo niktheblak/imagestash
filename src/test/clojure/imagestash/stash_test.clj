@@ -2,26 +2,16 @@
   (:import [java.io File]
            [java.util Arrays Random])
   (:require [clojure.test :refer :all]
+            [imagestash.test-utils :refer :all]
             [imagestash.stash :as stash]))
-
-(defn- temp-file []
-  (let [file (File/createTempFile "file-test-" ".tmp")
-        _ (.deleteOnExit file)]
-    file))
 
 (defn- divisible-by-eight [n]
   (= 0 (mod n 8)))
 
-(def test-image-data
-  (let [data (byte-array 125)
-        random (Random.)
-        _ (.nextBytes random data)]
-    data))
-
 (def test-image {:key "test-key"
                  :size 1024
                  :format :jpeg
-                 :data test-image-data})
+                 :data (random-data 125)})
 
 (deftest write-test
   (let [file (temp-file)]
@@ -45,7 +35,7 @@
         (is (= "test-key" (:key read-image)))
         (is (= 1024 (:size read-image)))
         (is (= :jpeg (:format read-image)))
-        (is (Arrays/equals test-image-data (:data read-image)))
+        (is (Arrays/equals (:data test-image) (:data read-image)))
         (is (= size-on-disk (:stored-length read-image)))))
     (testing "read should throw on invalid header"
       (is (thrown-with-msg? RuntimeException #"Invalid header" (stash/read-from file 3))))))

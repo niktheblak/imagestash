@@ -11,7 +11,7 @@
       (instance? File source)
       (string? source)))
 
-(defn with-image [source f]
+(defn- with-source [source f]
   {:pre [(supported-source? source)]}
   (let [src (if (string? source) (URL. source) source)
         image (atom nil)]
@@ -25,7 +25,7 @@
 (defn resize-image [source size format]
   {:pre [(number? size)
          (format/supported-format? format)]}
-  (let [resized (with-image source (fn [^BufferedImage image] (Scalr/resize image (int size))))
+  (let [resized (with-source source #(Scalr/resize % (int size)))
         output (ByteArrayOutputStream.)
         format-str (format/to-string format)
         _ (ImageIO/write resized format-str output)]

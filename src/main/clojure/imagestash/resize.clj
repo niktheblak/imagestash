@@ -4,8 +4,7 @@
            [java.awt.image BufferedImage]
            [java.io ByteArrayOutputStream File]
            [java.net URL])
-  (:require [imagestash.format :as format]
-            [imagestash.util :as util]))
+  (:require [imagestash.format :as format]))
 
 (defn supported-source? [source]
   (or (instance? URL source)
@@ -13,9 +12,6 @@
       (string? source)))
 
 (defmacro with-image [bindings & body]
-  (util/assert-args
-    (vector? bindings) "a vector for its binding"
-    (even? (count bindings)) "an even number of forms in binding vector")
   (cond
     (= (count bindings) 0) `(do ~@body)
     (symbol? (bindings 0)) `(let ~(subvec bindings 0 2)

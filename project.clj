@@ -8,6 +8,5 @@
   :source-paths ["src/main/clojure"]
   :java-source-paths ["src/main/java"]
   :test-paths ["src/test/clojure"]
-  :main ^:skip-aot imagestash.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

@@ -4,29 +4,39 @@
            [java.awt.image BufferedImage]
            [java.io ByteArrayOutputStream File]
            [java.net URL])
-  (:require [imagestash.format :as format]))
+  (:require [imagestash.format :as format]
+            [imagestash.util :as util]))
 
 (defn supported-source? [source]
   (or (instance? URL source)
       (instance? File source)
       (string? source)))
 
-(defn- with-source [source f]
+(defmacro with-image [bindings & body]
+  (util/assert-args
+    (vector? bindings) "a vector for its binding"
+    (even? (count bindings)) "an even number of forms in binding vector")
+  (cond
+    (= (count bindings) 0) `(do ~@body)
+    (symbol? (bindings 0)) `(let ~(subvec bindings 0 2)
+                              (try
+                                (with-image ~(subvec bindings 2) ~@body)
+                                (finally
+                                  (.flush ~(bindings 0)))))
+    :else (throw (IllegalArgumentException.
+                   "with-image only allows Symbols in bindings"))))
+
+(defn- read-from [source]
   {:pre [(supported-source? source)]}
-  (let [src (if (string? source) (URL. source) source)
-        image (atom nil)]
-    (try
-      (reset! image (ImageIO/read src))
-      (f @image)
-      (finally
-        (when @image
-          (.flush @image))))))
+  (let [src (if (string? source) (URL. source) source)]
+    (ImageIO/read src)))
 
 (defn resize-image [source size format]
   {:pre [(number? size)
          (format/supported-format? format)]}
-  (let [resized (with-source source #(Scalr/resize % (int size)))
-        output (ByteArrayOutputStream.)
-        format-str (format/to-string format)
-        _ (ImageIO/write resized format-str output)]
-    (.toByteArray output)))
+  (with-image [image (read-from source)
+               resized (Scalr/resize image (int size))]
+    (let [output (ByteArrayOutputStream.)
+          format-str (format/to-string format)]
+      (ImageIO/write resized format-str output)
+      (.toByteArray output))))

@@ -3,12 +3,12 @@
            [java.util Random]))
 
 (defn temp-file []
-  (let [file (File/createTempFile "imagestash-test-" ".tmp")
-        _ (.deleteOnExit file)]
+  (let [file (File/createTempFile "imagestash-test-" ".tmp")]
+    (.deleteOnExit file)
     file))
 
 (defn random-data [size]
   (let [data (byte-array size)
-        random (Random.)
-        _ (.nextBytes random data)]
+        random (Random.)]
+    (.nextBytes random data)
     data))

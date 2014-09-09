@@ -13,13 +13,26 @@
       (identical? (.getComponentType c) Byte/TYPE))))
 
 (defn str-to-bytes [str]
+  {:pre [(string? str)]}
   (.getBytes str default-charset))
 
 (defn int-to-bytes [n]
+  {:pre [(integer? n)
+         (>= n Integer/MIN_VALUE)
+         (<= n Integer/MAX_VALUE)]
+   :post [(byte-array? %)
+          (= 4 (alength %))]}
   (let [i (int n)
         buffer (ByteBuffer/allocate 4)
         _ (.putInt buffer i)]
     (.array buffer)))
+
+(defn to-bytes [n]
+  {:post [(byte-array? %)]}
+  (cond
+    (byte-array? n) n
+    (string? n) (str-to-bytes n)
+    :else (byte-array (map unchecked-byte n))))
 
 (defn read-fully [^InputStream input & {:keys [buffer-size] :or {buffer-size 4096}}]
   (loop [buffer (byte-array buffer-size)

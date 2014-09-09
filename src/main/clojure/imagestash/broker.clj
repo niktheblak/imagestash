@@ -5,17 +5,15 @@
            [java.net URL])
   (:require [clojure.java.io :as jio]
             [imagestash.io :as io]
+            [imagestash.digest :as d]
             [imagestash.stash :as stash]
             [imagestash.index :as index]
             [imagestash.resize :as resize]
             [imagestash.format :as format]))
 
 (defn get-key [source size format]
-  (let [digest (MessageDigest/getInstance "SHA-1")]
-    (.update digest (io/str-to-bytes source))
-    (.update digest (io/int-to-bytes size))
-    (.update digest (io/str-to-bytes (str format)))
-    (Base58/encode (.digest digest))))
+  (let [digest (d/digest source size format)]
+    (Base58/encode digest)))
 
 (defn from-internet-source [source size & {:keys [format] :or {format :jpeg}}]
   {:pre [(string? source)

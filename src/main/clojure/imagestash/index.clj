@@ -1,8 +1,9 @@
 (ns imagestash.index
-  (:import [java.io File RandomAccessFile])
+  (:import [java.io File RandomAccessFile]
+           [clojure.lang Keyword])
   (:require [imagestash.stash :as iio]))
 
-(defrecord IndexKey [^String key ^Long size format])
+(defrecord IndexKey [^String key ^Long size ^Keyword format])
 
 (defrecord IndexValue [^Long offset ^Long size])
 

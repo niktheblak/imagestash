@@ -2,7 +2,7 @@
   (:import [java.io File RandomAccessFile]
            [java.security MessageDigest]
            [imagestash.j Base58]
-           [java.net URL])
+           [java.net URL URI MalformedURLException])
   (:require [clojure.java.io :as jio]
             [imagestash.io :as io]
             [imagestash.digest :as d]
@@ -15,9 +15,15 @@
   (let [digest (d/digest source size format)]
     (Base58/encode digest)))
 
+(defn- to-url [source]
+  (cond
+    (instance? URL source) source
+    (instance? URI source) (.toURL source)
+    (string? source) (URL. source)
+    :else (throw (ex-info "Unsupported source" {:source source}))))
+
 (defn from-internet-source [source size & {:keys [format] :or {format :jpeg}}]
-  {:pre [(string? source)
-         (number? size)
+  {:pre [(number? size)
          (format/supported-format? format)]
    :post [(:key %)
           (:size %)
@@ -26,12 +32,10 @@
   {:key    (get-key source size format)
    :size   size
    :format format
-   :source (URL. source)})
+   :source (to-url source)})
 
 (defn from-file-source [^File source size & {:keys [format] :or {format :jpeg}}]
   {:pre [(.exists source)
-         (.isFile source)
-         (.canRead source)
          (number? size)
          (format/supported-format? format)]
    :post [(:key %)

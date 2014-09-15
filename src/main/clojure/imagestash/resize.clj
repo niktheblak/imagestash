@@ -1,9 +1,9 @@
 (ns imagestash.resize
   (:import [javax.imageio ImageIO]
-           [imagestash.j Scalr]
-           [java.awt.image BufferedImage]
+           [java.awt.image BufferedImage BufferedImageOp]
            [java.io ByteArrayOutputStream File]
-           [java.net URL URI MalformedURLException])
+           [java.net URL URI MalformedURLException]
+           [org.imgscalr Scalr])
   (:require [imagestash.format :as format]))
 
 (defmacro with-image [bindings & body]
@@ -40,11 +40,14 @@
 (defn supported-source? [source]
   (to-readable-source source))
 
+(defn- resize [^BufferedImage image size]
+  (Scalr/resize image (int size) (into-array BufferedImageOp [])))
+
 (defn resize-image [source size format]
   {:pre [(number? size)
          (format/supported-format? format)]}
   (with-image [image (read-from source)
-               resized (Scalr/resize image (int size))]
+               resized (resize image size)]
     (let [output (ByteArrayOutputStream.)
           format-str (format/to-string format)]
       (ImageIO/write resized format-str output)

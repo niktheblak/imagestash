@@ -52,17 +52,16 @@
                )]
     (+ len (padding-length len))))
 
-(defn write-to [target {:keys [flags key size format data]
-                      :or {flags 0}}]
+(defn write-to-file [^RandomAccessFile file {:keys [flags key size format data]
+                        :or {flags 0}}]
   {:pre [(string? key)
          (number? size)
          (format/supported-format? format)
          (io/byte-array? data)]}
-  (with-open [ra-file (RandomAccessFile. target "rw")]
-    (let [original-length (.length ra-file)
+    (let [original-length (.length file)
           key-bytes (.getBytes key charset)
           format-code (format-to-code (format/to-format format))]
-      (doto ra-file
+      (doto file
         (.seek original-length)
         (.write header)
         (.write flags)
@@ -72,14 +71,23 @@
         (.write format-code)
         (.writeInt (alength data))
         (.write data)
-        (.write (get-padding-bytes ra-file)))
-      (let [size-on-disk (- (.getFilePointer ra-file) original-length)]
+        (.write (get-padding-bytes file)))
+      (let [size-on-disk (- (.getFilePointer file) original-length)]
         {:offset original-length
-         :size-on-disk size-on-disk}))))
+         :size-on-disk size-on-disk})))
 
-(defn read-from-file [^RandomAccessFile ra-file]
-  (let [start-offset (.getFilePointer ra-file)
-        header-buf (byte-array (alength header))
+(defn write-to [target {:keys [flags key size format data]
+                        :or {flags 0} :as image}]
+  {:pre [(string? key)
+         (number? size)
+         (format/supported-format? format)
+         (io/byte-array? data)]}
+  (with-open [ra-file (RandomAccessFile. target "rw")]
+    (write-to-file ra-file image)))
+
+(defn read-from-file [^RandomAccessFile ra-file offset]
+  (.seek ra-file offset)
+  (let [header-buf (byte-array (alength header))
         _ (.readFully ra-file header-buf)]
     (when-not (Arrays/equals header header-buf)
       (throw (ex-info "Invalid header" {:header header-buf})))
@@ -96,7 +104,7 @@
           _ (.readFully ra-file image-data)
           padding-len (padding-length (.getFilePointer ra-file))
           _ (.skipBytes ra-file (int padding-len))
-          stored-len (- (.getFilePointer ra-file) start-offset)]
+          stored-len (- (.getFilePointer ra-file) offset)]
       {:flags         flags
        :key           image-key
        :size          image-size
@@ -106,5 +114,4 @@
 
 (defn read-from [source offset]
   (with-open [ra-file (RandomAccessFile. source "r")]
-    (.seek ra-file offset)
-    (read-from-file ra-file)))
+    (read-from-file ra-file offset)))

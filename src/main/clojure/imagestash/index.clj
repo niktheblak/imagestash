@@ -21,7 +21,7 @@
     (loop [bytes-read 0
            images {}]
       (let [current-offset (.getFilePointer ra-file)
-            image (iio/read-from-file ra-file)
+            image (iio/read-from-file ra-file current-offset)
             new-bytes-read (+ bytes-read (:stored-length image))
             index-key (IndexKey. (:key image) (:size image) (:format image))
             value (IndexValue. current-offset (:stored-length image))

@@ -27,18 +27,15 @@
       (throw (ex-info "Invalid format" {:format format}))
       format)))
 
-(defn- padding-length [len]
-  {:pre [(pos? len)]
+(defn- padding-length [position]
+  {:pre [(pos? position)]
    :post [(>= % 0)
           (<= % 8)]}
-  (let [offset (mod len 8)
-        padding-length (if (= 0 offset) 0 (- 8 offset))]
+  (let [offset (mod position 8)
+        padding-length (if (= 0 offset)
+                         0
+                         (- 8 offset))]
     padding-length))
-
-(defn- get-padding-bytes [ra-file]
-  (let [pos (.getFilePointer ra-file)
-        len (padding-length pos)]
-    (byte-array len)))
 
 (defn size-on-disk [{:keys [flags key data]
                      :or   {flags 0}}]
@@ -51,6 +48,12 @@
                (alength data)                               ; image data
                )]
     (+ len (padding-length len))))
+
+(defn- write-padding [^RandomAccessFile file]
+  (let [pos (.getFilePointer file)
+        len (padding-length pos)]
+    (dotimes [i len]
+      (.write file 0))))
 
 (defn write-to-file [^RandomAccessFile file {:keys [flags key size format data]
                         :or {flags 0}}]
@@ -71,7 +74,7 @@
         (.write format-code)
         (.writeInt (alength data))
         (.write data)
-        (.write (get-padding-bytes file)))
+        (write-padding))
       (let [size-on-disk (- (.getFilePointer file) original-length)]
         {:offset original-length
          :size-on-disk size-on-disk})))

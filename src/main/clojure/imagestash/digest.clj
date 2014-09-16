@@ -11,9 +11,8 @@
   {:post [(io/byte-array? %)]}
   (let [digest (get-digest)]
     (doseq [n items]
-      (let [bytes (cond
-                    (and (integer? n) (< n 256)) (byte-array [(unchecked-byte n)])
-                    (integer? n) (io/int-to-bytes n)
-                    :else (io/to-bytes n))]
-        (.update digest bytes)))
+      (cond
+        (and (integer? n) (< n 256)) (.update digest (unchecked-byte n))
+        (integer? n) (io/update-digest-int digest n)
+        :else (.update digest (io/to-bytes n))))
     (.digest digest)))

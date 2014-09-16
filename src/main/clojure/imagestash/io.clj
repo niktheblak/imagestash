@@ -17,16 +17,16 @@
   {:pre [(string? str)]}
   (.getBytes str default-charset))
 
-(defn int-to-bytes [n]
-  {:pre [(integer? n)
-         (>= n Integer/MIN_VALUE)
-         (<= n Integer/MAX_VALUE)]
-   :post [(byte-array? %)
-          (= 4 (alength %))]}
-  (let [i (int n)
-        buffer (ByteBuffer/allocate 4)
-        _ (.putInt buffer i)]
-    (.array buffer)))
+(defn update-digest-int [digest n]
+  (let [b4 (bit-and n 0xFF)
+        b3 (bit-and (bit-shift-right n 8) 0xFF)
+        b2 (bit-and (bit-shift-right n 16) 0xFF)
+        b1 (bit-and (bit-shift-right n 24) 0xFF)]
+    (doto digest
+      (.update (unchecked-byte b1))
+      (.update (unchecked-byte b2))
+      (.update (unchecked-byte b3))
+      (.update (unchecked-byte b4)))))
 
 (defn to-bytes [n]
   {:post [(byte-array? %)]}
@@ -65,14 +65,14 @@
     buffer))
 
 (defn read-and-digest-int [^DataInput input ^MessageDigest digest]
-  (let [i (.readInt input)]
-    (.update digest (int-to-bytes i))
-    i))
+  (let [n (.readInt input)]
+    (update-digest-int digest n)
+    n))
 
 (defn read-and-digest-short [^DataInput input ^MessageDigest digest]
-  (let [i (.readUnsignedShort input)]
-    (.update digest (int-to-bytes i))
-    i))
+  (let [n (.readUnsignedShort input)]
+    (update-digest-int digest n)
+    n))
 
 (defn write-and-digest-byte [^DataOutput output ^MessageDigest digest b]
   (.writeByte output (int b))
@@ -84,8 +84,8 @@
 
 (defn write-and-digest-int [^DataOutput output ^MessageDigest digest n]
   (.writeInt output (int n))
-  (.update digest (int-to-bytes n)))
+  (update-digest-int digest n))
 
 (defn write-and-digest-short [^DataOutput output ^MessageDigest digest n]
   (.writeShort output (int n))
-  (.update digest (int-to-bytes n)))
+  (update-digest-int digest n))

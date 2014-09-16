@@ -11,9 +11,9 @@
                  :format :jpeg
                  :data (random-data size)})
 
-(def test-index {(->IndexKey "img1" 1024 :jpeg) (->IndexValue 0 168)
-                 (->IndexKey "img2" 1024 :jpeg) (->IndexValue 168 168)
-                 (->IndexKey "img3" 1024 :jpeg) (->IndexValue 336 168)})
+(def test-index {(->IndexKey "img1" 1024 :jpeg) (->IndexValue 0 160)
+                 (->IndexKey "img2" 1024 :jpeg) (->IndexValue 160 160)
+                 (->IndexKey "img3" 1024 :jpeg) (->IndexValue 320 160)})
 
 (deftest save-index-test
   (testing "save index"

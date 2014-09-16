@@ -48,6 +48,11 @@
           (recur buf (inc pos)))
         (Arrays/copyOfRange buf 0 pos)))))
 
+(defn read-bytes [^DataInput input n]
+  (let [buf (byte-array n)]
+    (.readFully input buf)
+    buf))
+
 (defn read-and-digest-byte [^DataInput input ^MessageDigest digest]
   (let [b (.readByte input)]
     (.update digest b)
@@ -64,6 +69,11 @@
     (.update digest (int-to-bytes i))
     i))
 
+(defn read-and-digest-short [^DataInput input ^MessageDigest digest]
+  (let [i (.readUnsignedShort input)]
+    (.update digest (int-to-bytes i))
+    i))
+
 (defn write-and-digest-byte [^DataOutput output ^MessageDigest digest b]
   (.writeByte output (int b))
   (.update digest (unchecked-byte b)))
@@ -74,4 +84,8 @@
 
 (defn write-and-digest-int [^DataOutput output ^MessageDigest digest n]
   (.writeInt output (int n))
+  (.update digest (int-to-bytes n)))
+
+(defn write-and-digest-short [^DataOutput output ^MessageDigest digest n]
+  (.writeShort output (int n))
   (.update digest (int-to-bytes n)))

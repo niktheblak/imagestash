@@ -24,8 +24,8 @@
     (testing "append to a non-empty file"
       (let [stored-image (stash/write-to file (assoc test-image :key "test-key-2"))
             file-len (.length file)]
-        (is (= 176 (:size stored-image)))
-        (is (= 344 file-len))))))
+        (is (= 168 (:size stored-image)))
+        (is (= 336 file-len))))))
 
 (deftest read-test
   (let [file (temp-file)]

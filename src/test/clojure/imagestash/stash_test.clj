@@ -16,27 +16,27 @@
 (deftest write-test
   (let [file (temp-file)]
     (testing "write to an empty file"
-      (let [{:keys [size-on-disk]} (stash/write-to file test-image)
+      (let [{:keys [size]} (stash/write-to file test-image)
             file-len (.length file)]
-        (is (divisible-by-eight size-on-disk))
-        (is (= 152 size-on-disk))
-        (is (= size-on-disk file-len))))
+        (is (divisible-by-eight size))
+        (is (= 168 size))
+        (is (= size file-len))))
     (testing "append to a non-empty file"
-      (let [{:keys [size-on-disk]} (stash/write-to file (assoc test-image :key "test-key-2"))
+      (let [stored-image (stash/write-to file (assoc test-image :key "test-key-2"))
             file-len (.length file)]
-        (is (= 160 size-on-disk))
-        (is (= 312 file-len))))))
+        (is (= 176 (:size stored-image)))
+        (is (= 344 file-len))))))
 
 (deftest read-test
   (let [file (temp-file)]
     (testing "write/read roundtrip"
-      (let [{:keys [size-on-disk]} (stash/write-to file test-image)
+      (let [stored-image (stash/write-to file test-image)
             read-image (stash/read-from file 0)]
         (is (= "test-key" (:key read-image)))
         (is (= 1024 (:size read-image)))
         (is (= :jpeg (:format read-image)))
         (is (Arrays/equals (:data test-image) (:data read-image)))
-        (is (= size-on-disk (:stored-length read-image)))))
+        (is (= (:size stored-image) (:stored-length read-image)))))
     (testing "read should throw on invalid header"
       (is (thrown-with-msg? RuntimeException #"Invalid header" (stash/read-from file 3))))))
 
@@ -44,9 +44,9 @@
   (let [file (temp-file)]
     (testing "size-on-disk"
       (let [expected-size (stash/size-on-disk test-image)
-            {:keys [size-on-disk]} (stash/write-to file test-image)
+            {:keys [size]} (stash/write-to file test-image)
             file-size (.length file)
             read-image (stash/read-from file 0)]
-        (is (= expected-size size-on-disk))
+        (is (= expected-size size))
         (is (= expected-size file-size))
         (is (= expected-size (:stored-length read-image)))))))

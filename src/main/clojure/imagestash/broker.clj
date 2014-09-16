@@ -60,8 +60,8 @@
         index-key (index/->IndexKey key size format)
         resized-image-data (resize/resize-image source size format)
         resized-image (assoc image :data resized-image-data)
-        {:keys [size-on-disk offset]} (stash/write-to storage resized-image)
-        value (index/->IndexValue offset size-on-disk)]
+        stored-image (stash/write-to storage resized-image)
+        value (index/->IndexValue (:offset stored-image) (:size stored-image))]
     (assoc-in broker [:index index-key] value)))
 
 (defn add-image [broker {:keys [key size format source] :as image}]

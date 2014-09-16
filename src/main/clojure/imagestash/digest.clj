@@ -3,7 +3,9 @@
   (:require [imagestash.io :as io]))
 
 (defn get-digest []
-  (MessageDigest/getInstance "SHA-256"))
+  (MessageDigest/getInstance "MD5"))
+
+(def digest-length (.getDigestLength (get-digest)))
 
 (defn digest [& items]
   {:post [(io/byte-array? %)]}

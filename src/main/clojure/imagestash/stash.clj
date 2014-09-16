@@ -1,9 +1,11 @@
 (ns imagestash.stash
   (:import [java.io RandomAccessFile]
            [java.util Arrays]
-           [java.nio.charset Charset])
+           [java.nio.charset Charset]
+           [java.security MessageDigest])
   (:require [clojure.set :as set]
             [imagestash.format :as format]
+            [imagestash.digest :as d]
             [imagestash.io :as io]))
 
 (def charset (Charset/forName "US-ASCII"))
@@ -46,6 +48,7 @@
                4                                            ; image size
                1                                            ; format
                (alength data)                               ; image data
+               d/digest-length                              ; digest length
                )]
     (+ len (padding-length len))))
 
@@ -61,23 +64,26 @@
          (number? size)
          (format/supported-format? format)
          (io/byte-array? data)]}
-    (let [original-length (.length file)
+    (let [digest (d/get-digest)
+          original-length (.length file)
           key-bytes (.getBytes key charset)
           format-code (format-to-code (format/to-format format))]
       (doto file
         (.seek original-length)
-        (.write header)
-        (.write flags)
-        (.writeInt (alength key-bytes))
-        (.write key-bytes)
-        (.writeInt (int size))
-        (.write format-code)
-        (.writeInt (alength data))
-        (.write data)
+        (io/write-and-digest-bytes digest header)
+        (io/write-and-digest-byte digest flags)
+        (io/write-and-digest-int digest (alength key-bytes))
+        (io/write-and-digest-bytes digest key-bytes)
+        (io/write-and-digest-int digest (int size))
+        (io/write-and-digest-byte digest format-code)
+        (io/write-and-digest-int digest (alength data))
+        (io/write-and-digest-bytes digest data)
+        (.write (.digest digest))
         (write-padding))
-      (let [size-on-disk (- (.getFilePointer file) original-length)]
+      (let [storage-size (- (.getFilePointer file) original-length)]
         {:offset original-length
-         :size-on-disk size-on-disk})))
+         :size storage-size
+         :checksum (.digest digest)})))
 
 (defn write-to [target {:keys [flags key size format data]
                         :or {flags 0} :as image}]
@@ -88,33 +94,41 @@
   (with-open [ra-file (RandomAccessFile. target "rw")]
     (write-to-file ra-file image)))
 
-(defn read-from-file [^RandomAccessFile ra-file offset]
-  (.seek ra-file offset)
-  (let [header-buf (byte-array (alength header))
-        _ (.readFully ra-file header-buf)]
-    (when-not (Arrays/equals header header-buf)
-      (throw (ex-info "Invalid header" {:header header-buf})))
-    (let [flags (.readByte ra-file)
-          key-len (.readInt ra-file)
-          key-buf (byte-array key-len)
-          _ (.readFully ra-file key-buf)
+(defn read-from-file [^RandomAccessFile ra-file]
+  (let [digest (d/get-digest)
+        original-pos (.getFilePointer ra-file)
+        header-bytes (io/read-and-digest-bytes ra-file digest (alength header))]
+    (when-not (Arrays/equals header header-bytes)
+      (throw (ex-info "Invalid header" {:header header-bytes})))
+    (let [flags (io/read-and-digest-byte ra-file digest)
+          key-len (io/read-and-digest-int ra-file digest)
+          key-buf (io/read-and-digest-bytes ra-file digest key-len)
           image-key (String. key-buf charset)
-          image-size (.readInt ra-file)
-          format-code (.readByte ra-file)
+          image-size (io/read-and-digest-int ra-file digest)
+          format-code (io/read-and-digest-byte ra-file digest)
           image-format (code-to-format format-code)
-          data-len (.readInt ra-file)
-          image-data (byte-array data-len)
-          _ (.readFully ra-file image-data)
+          data-len (io/read-and-digest-int ra-file digest)
+          image-data (io/read-and-digest-bytes ra-file digest data-len)
+          digest-bytes (byte-array d/digest-length)
+          _ (.readFully ra-file digest-bytes)
           padding-len (padding-length (.getFilePointer ra-file))
           _ (.skipBytes ra-file (int padding-len))
-          stored-len (- (.getFilePointer ra-file) offset)]
-      {:flags         flags
-       :key           image-key
-       :size          image-size
-       :format        image-format
-       :data          image-data
-       :stored-length stored-len})))
+          stored-len (- (.getFilePointer ra-file) original-pos)
+          expected-digest-bytes (.digest digest)]
+      (if (Arrays/equals expected-digest-bytes digest-bytes)
+        {:flags         flags
+         :key           image-key
+         :size          image-size
+         :format        image-format
+         :data          image-data
+         :stored-length stored-len
+         :checksum      digest-bytes}
+        (throw (ex-info
+                 "Image data does not match checksum"
+                 {:key image-key
+                  :offset original-pos}))))))
 
 (defn read-from [source offset]
   (with-open [ra-file (RandomAccessFile. source "r")]
-    (read-from-file ra-file offset)))
+    (.seek ra-file offset)
+    (read-from-file ra-file)))

@@ -1,8 +1,9 @@
 (ns imagestash.io
-  (:import [java.io InputStream]
+  (:import [java.io InputStream DataInput DataOutput]
            [java.util Arrays]
            [java.nio.charset Charset]
-           [java.nio ByteBuffer]))
+           [java.nio ByteBuffer]
+           [java.security MessageDigest]))
 
 (def default-charset (Charset/forName "UTF-8"))
 
@@ -46,3 +47,31 @@
           (aset buf pos (unchecked-byte b))
           (recur buf (inc pos)))
         (Arrays/copyOfRange buf 0 pos)))))
+
+(defn read-and-digest-byte [^DataInput input ^MessageDigest digest]
+  (let [b (.readByte input)]
+    (.update digest b)
+    b))
+
+(defn read-and-digest-bytes [^DataInput input ^MessageDigest digest length]
+  (let [buffer (byte-array length)]
+    (.readFully input buffer)
+    (.update digest buffer)
+    buffer))
+
+(defn read-and-digest-int [^DataInput input ^MessageDigest digest]
+  (let [i (.readInt input)]
+    (.update digest (int-to-bytes i))
+    i))
+
+(defn write-and-digest-byte [^DataOutput output ^MessageDigest digest b]
+  (.writeByte output (int b))
+  (.update digest (unchecked-byte b)))
+
+(defn write-and-digest-bytes [^DataOutput output ^MessageDigest digest arr]
+  (.write output arr)
+  (.update digest arr))
+
+(defn write-and-digest-int [^DataOutput output ^MessageDigest digest n]
+  (.writeInt output (int n))
+  (.update digest (int-to-bytes n)))

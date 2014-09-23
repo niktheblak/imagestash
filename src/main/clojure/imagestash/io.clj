@@ -17,7 +17,7 @@
   {:pre [(string? str)]}
   (.getBytes str default-charset))
 
-(defn update-digest-int [digest n]
+(defn update-digest-int [^MessageDigest digest n]
   (let [b4 (bit-and n 0xFF)
         b3 (bit-and (bit-shift-right n 8) 0xFF)
         b2 (bit-and (bit-shift-right n 16) 0xFF)
@@ -48,44 +48,44 @@
           (recur buf (inc pos)))
         (Arrays/copyOfRange buf 0 pos)))))
 
-(defn read-bytes [^DataInput input n]
+(defn read-byte [^DataInput input]
+  (.readByte input))
+
+(defn read-short [^DataInput input]
+  (.readUnsignedShort input))
+
+(defn read-int [^DataInput input]
+  (.readInt input))
+
+(defn read-bytes [n ^DataInput input]
   (let [buf (byte-array n)]
     (.readFully input buf)
     buf))
 
-(defn read-and-digest-byte [^DataInput input ^MessageDigest digest]
-  (let [b (.readByte input)]
-    (.update digest b)
-    b))
+(defn write-byte [^DataOutput output n]
+  (.writeByte output n))
 
-(defn read-and-digest-bytes [^DataInput input ^MessageDigest digest length]
-  (let [buffer (byte-array length)]
-    (.readFully input buffer)
-    (.update digest buffer)
-    buffer))
+(defn write-bytes [^DataOutput output data]
+  (.write output data))
 
-(defn read-and-digest-int [^DataInput input ^MessageDigest digest]
-  (let [n (.readInt input)]
-    (update-digest-int digest n)
-    n))
+(defn write-short [^DataOutput output n]
+  (.writeShort output n))
 
-(defn read-and-digest-short [^DataInput input ^MessageDigest digest]
-  (let [n (.readUnsignedShort input)]
-    (update-digest-int digest n)
-    n))
+(defn write-int [^DataOutput output n]
+  (.writeInt output n))
 
-(defn write-and-digest-byte [^DataOutput output ^MessageDigest digest b]
-  (.writeByte output (int b))
-  (.update digest (unchecked-byte b)))
+(defn update-digest [^MessageDigest digest data]
+  (cond
+    (instance? Byte data) (.update digest data)
+    (integer? data) (update-digest-int digest data)
+    (byte-array? data) (.update digest data)
+    :else (throw (ex-info "Unknown data format" {:data data}))))
 
-(defn write-and-digest-bytes [^DataOutput output ^MessageDigest digest arr]
-  (.write output arr)
-  (.update digest arr))
+(defn read-and-digest [^DataInput input ^MessageDigest digest read-fn]
+  (let [data (read-fn input)]
+    (update-digest digest data)
+    data))
 
-(defn write-and-digest-int [^DataOutput output ^MessageDigest digest n]
-  (.writeInt output (int n))
-  (update-digest-int digest n))
-
-(defn write-and-digest-short [^DataOutput output ^MessageDigest digest n]
-  (.writeShort output (int n))
-  (update-digest-int digest n))
+(defn write-and-digest [^DataOutput output ^MessageDigest digest data write-fn]
+  (write-fn output data)
+  (update-digest digest data))

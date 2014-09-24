@@ -31,4 +31,9 @@
       {:status  400
        :body    "Invalid parameters"})))
 
-(jet/run-jetty (params/wrap-params (accept-resize-route handler)) {:port 8080})
+(defn -main [& args]
+  (let [server (jet/run-jetty (params/wrap-params (accept-resize-route handler)) {:port 8080 :join? false})]
+    (println "Started imagestash server. Press <ENTER> to quit...")
+    (read-line)
+    (.stop server)
+    (shutdown-agents)))

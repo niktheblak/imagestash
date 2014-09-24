@@ -67,7 +67,7 @@
     (let [digest (d/get-digest)
           original-length (.length file)
           key-bytes (.getBytes key charset)
-          format-code (format-to-code (format/to-format format))]
+          format-code (format-to-code (format/parse-format format))]
       (doto file
         (.seek original-length)
         (d/write-and-digest digest header io/write-bytes)

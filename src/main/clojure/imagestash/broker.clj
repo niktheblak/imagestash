@@ -29,7 +29,7 @@
           (:size %)
           (:format %)
           (:source %)]}
-  {:key    (get-key source size format)
+  {:key    (get-key (str source) size (str format))
    :size   size
    :format format
    :source (to-url source)})

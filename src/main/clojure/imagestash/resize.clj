@@ -49,6 +49,6 @@
   (with-image [image (read-from source)
                resized (resize image size)]
     (let [output (ByteArrayOutputStream.)
-          format-str (format/to-string format)]
+          format-str (format/format-name format)]
       (ImageIO/write resized format-str output)
       (.toByteArray output))))

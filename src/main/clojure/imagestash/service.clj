@@ -1,13 +1,22 @@
 (ns imagestash.service
   (:import [java.net URI]
-           [java.io ByteArrayInputStream])
+           [java.io ByteArrayInputStream File])
   (:require [imagestash.broker :as br]
             [imagestash.format :as fmt]
+            [imagestash.index :as idx]
             [ring.adapter.jetty :as jet]
             [ring.util.response :refer :all]
             [ring.middleware.params :as params]))
 
-(def broker (br/create-broker 1))
+(def index-file-name "index.bin")
+
+(defn- load-index []
+  (let [file (File. index-file-name)]
+    (if (.exists file)
+      (idx/load-index file)
+      {})))
+
+(def broker (br/create-broker 1 :index (load-index)))
 
 (defn accept-resize-route [handler]
   (fn [request]
@@ -36,4 +45,5 @@
     (println "Started imagestash server. Press <ENTER> to quit...")
     (read-line)
     (.stop server)
+    (idx/save-index index-file-name (:index @broker))
     (shutdown-agents)))

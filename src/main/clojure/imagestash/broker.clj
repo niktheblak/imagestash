@@ -50,10 +50,10 @@
 (defn storage-file [id]
   (File. (str "broker-" id ".bin")))
 
-(defn create-broker [id]
+(defn create-broker [id & {:keys [index] :or {index {}}}]
   (agent {:broker-id id
           :storage (storage-file id)
-          :index {}}))
+          :index index}))
 
 (defn- add-image-fn [broker {:keys [key size format source] :as image}]
   (let [storage (:storage broker)

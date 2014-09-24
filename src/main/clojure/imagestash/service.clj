@@ -12,6 +12,13 @@
   (let [data (:data image)]
     (ByteArrayInputStream. data)))
 
+(defn accept-resize-route [handler]
+  (fn [request]
+    (let [path (:uri request)]
+      (if (= "/resize" path)
+        (handler request)
+        {:status 404}))))
+
 (defn handler [request]
   (let [source (get-in request [:params "source"])
         raw-size (get-in request [:params "size"])
@@ -28,4 +35,4 @@
        :headers {"Content-Type" "text/plain"}
        :body    "Invalid parameters"})))
 
-(jet/run-jetty (params/wrap-params handler) {:port 8080})
+(jet/run-jetty (params/wrap-params (accept-resize-route handler)) {:port 8080})

@@ -28,7 +28,8 @@
 
 (defn read-and-digest [^DataInput input ^MessageDigest digest read-fn]
   (let [data (read-fn input)]
-    (update-digest digest data)
+    (when digest
+      (update-digest digest data))
     data))
 
 (defn write-and-digest [^DataOutput output ^MessageDigest digest data write-fn]

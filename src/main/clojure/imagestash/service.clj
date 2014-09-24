@@ -4,20 +4,17 @@
   (:require [imagestash.broker :as br]
             [imagestash.format :as fmt]
             [ring.adapter.jetty :as jet]
+            [ring.util.response :refer :all]
             [ring.middleware.params :as params]))
 
 (def broker (br/create-broker 1))
-
-(defn- wrap-image-data [image]
-  (let [data (:data image)]
-    (ByteArrayInputStream. data)))
 
 (defn accept-resize-route [handler]
   (fn [request]
     (let [path (:uri request)]
       (if (= "/resize" path)
         (handler request)
-        {:status 404}))))
+        (not-found (str "Path" path " not found"))))))
 
 (defn handler [request]
   (let [source (get-in request [:params "source"])
@@ -30,9 +27,8 @@
             image (br/get-or-add-image broker image-source)]
         {:status  200
          :headers {"Content-Type" (fmt/format-mime-type (:format image))}
-         :body    (wrap-image-data image)})
+         :body    (:stream image)})
       {:status  400
-       :headers {"Content-Type" "text/plain"}
        :body    "Invalid parameters"})))
 
 (jet/run-jetty (params/wrap-params (accept-resize-route handler)) {:port 8080})

@@ -1,5 +1,5 @@
 (ns imagestash.stash
-  (:import [imagestash.j ImageInputStream]
+  (:import [imagestash.j RandomAccessFileInputStream]
            [java.io RandomAccessFile]
            [java.util Arrays]
            [java.nio.charset Charset]
@@ -18,17 +18,13 @@
                    :gif  2})
 
 (defn format-to-code [format]
-  (let [code (get format-codes format)]
-    (if (nil? code)
-      (throw (ex-info "Invalid format" {:format format}))
-      code)))
+  {:post [%]}
+  (get format-codes format))
 
 (defn code-to-format [format-code]
-  (let [code-formats (set/map-invert format-codes)
-        format (get code-formats format-code)]
-    (if (nil? format)
-      (throw (ex-info "Invalid format" {:format format}))
-      format)))
+  {:post [%]}
+  (let [code-formats (set/map-invert format-codes)]
+    (get code-formats format-code)))
 
 (defn- padding-length [position]
   {:pre [(pos? position)]
@@ -143,5 +139,5 @@
     (.seek ra-file offset)
     (let [header (read-header ra-file)
           data-len (:data-length header)
-          stream (ImageInputStream. ra-file data-len)]
+          stream (RandomAccessFileInputStream. ra-file data-len)]
       (assoc header :stream stream))))

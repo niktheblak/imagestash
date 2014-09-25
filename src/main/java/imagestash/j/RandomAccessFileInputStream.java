@@ -4,25 +4,33 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 
-public class ImageInputStream extends InputStream {
+public class RandomAccessFileInputStream extends InputStream {
     private final RandomAccessFile source;
-    private final long length;
+    private final long amount;
 
-    private long position;
+    private long bytesRead;
 
-    public ImageInputStream(RandomAccessFile source, long length) throws IOException {
+    public RandomAccessFileInputStream(RandomAccessFile source) throws IOException {
+        this(source, source.length() - source.getFilePointer());
+    }
+
+    public RandomAccessFileInputStream(RandomAccessFile source, long amount) throws IOException {
+        long remaining = source.length() - source.getFilePointer();
+        if (amount > remaining) {
+            throw new IllegalArgumentException("Requested read amount larger than remaining data in source file");
+        }
         this.source = source;
-        this.length = length;
+        this.amount = amount;
     }
 
     @Override
     public int read() throws IOException {
-        if (position == length) {
+        if (bytesRead == amount) {
             return -1;
         }
         int b = source.read();
         if (b != -1) {
-            ++position;
+            ++bytesRead;
         }
         return b;
     }
@@ -34,19 +42,20 @@ public class ImageInputStream extends InputStream {
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        if (position == length) {
+        if (bytesRead == amount) {
             return -1;
         }
         int amountToRead = (int)Math.min(len, remaining());
         int bytesRead = source.read(b, off, amountToRead);
-        position += bytesRead;
+        this.bytesRead += bytesRead;
         return bytesRead;
     }
 
     @Override
     public long skip(long n) throws IOException {
-        int skipped = source.skipBytes((int)n);
-        position += skipped;
+        int amountToSkip = (int)Math.min(n, remaining());
+        int skipped = source.skipBytes(amountToSkip);
+        bytesRead += skipped;
         return skipped;
     }
 
@@ -61,6 +70,6 @@ public class ImageInputStream extends InputStream {
     }
 
     public long remaining() {
-        return length - position;
+        return amount - bytesRead;
     }
 }

@@ -19,18 +19,12 @@
       (.update (unchecked-byte b3))
       (.update (unchecked-byte b4)))))
 
-(defn update-digest [^MessageDigest digest data]
-  (cond
-    (and (integer? data) (<= data 255)) (.update digest (unchecked-byte data))
-    (integer? data) (update-digest-int digest data)
-    (io/byte-array? data) (.update digest data)
-    :else (.update digest (io/to-bytes data))))
-
-(defn read-and-digest [^DataInput input ^MessageDigest digest read-fn]
-  (let [data (read-fn input)]
-    (when digest
-      (update-digest digest data))
-    data))
+(defn update-digest [^MessageDigest digest & items]
+  (doseq [data items]
+    (cond
+      (and (integer? data) (<= data 255)) (.update digest (unchecked-byte data))
+      (integer? data) (update-digest-int digest data)
+      :else (.update digest (io/to-bytes data)))))
 
 (defn write-and-digest [^DataOutput output ^MessageDigest digest data write-fn]
   (write-fn output data)
@@ -39,6 +33,6 @@
 (defn digest [& items]
   {:post [(io/byte-array? %)]}
   (let [digest (get-digest)]
-    (doseq [n items]
-      (update-digest digest n))
+    (doseq [item items]
+      (update-digest digest item))
     (.digest digest)))

@@ -16,12 +16,13 @@
   {:pre [(string? str)]}
   (.getBytes str default-charset))
 
-(defn to-bytes [n]
+(defn to-bytes [input]
   {:post [(byte-array? %)]}
   (cond
-    (byte-array? n) n
-    (string? n) (str-to-bytes n)
-    :else (byte-array (map unchecked-byte n))))
+    (byte-array? input) input
+    (string? input) (str-to-bytes input)
+    (coll? input) (byte-array (map unchecked-byte input))
+    :else (throw (ex-info "Cannot convert input to bytes" {:input input}))))
 
 (defn read-fully [^InputStream input & {:keys [buffer-size] :or {buffer-size 4096}}]
   (loop [buffer (byte-array buffer-size)
@@ -51,13 +52,14 @@
     buf))
 
 (defn write-byte [^DataOutput output n]
-  (.writeByte output n))
+  (.writeByte output (int n)))
 
 (defn write-bytes [^DataOutput output data]
+  {:pre [(byte-array? data)]}
   (.write output data))
 
 (defn write-short [^DataOutput output n]
-  (.writeShort output n))
+  (.writeShort output (int n)))
 
 (defn write-int [^DataOutput output n]
   (.writeInt output n))

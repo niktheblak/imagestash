@@ -61,26 +61,26 @@
          (number? size)
          (format/supported-format? format)
          (io/byte-array? data)]}
-    (let [digest (d/get-digest)
-          original-length (.length file)
+    (let [original-length (.length file)
           key-bytes (.getBytes key charset)
-          format-code (format-to-code (format/parse-format format))]
+          format-code (format-to-code (format/parse-format format))
+          checksum (d/digest header flags (alength key-bytes) key-bytes size format-code (alength data) data)]
       (doto file
         (.seek original-length)
-        (d/write-and-digest digest header io/write-bytes)
-        (d/write-and-digest digest (unchecked-byte flags) io/write-byte)
-        (d/write-and-digest digest (alength key-bytes) io/write-short)
-        (d/write-and-digest digest key-bytes io/write-bytes)
-        (d/write-and-digest digest (int size) io/write-short)
-        (d/write-and-digest digest (unchecked-byte format-code) io/write-byte)
-        (d/write-and-digest digest (alength data) io/write-int)
-        (d/write-and-digest digest data io/write-bytes)
-        (.write (.digest digest))
+        (io/write-bytes header)
+        (io/write-byte flags)
+        (io/write-short (alength key-bytes))
+        (io/write-bytes key-bytes)
+        (io/write-short size)
+        (io/write-byte format-code)
+        (io/write-int (alength data))
+        (io/write-bytes data)
+        (io/write-bytes checksum)
         (write-padding))
       (let [storage-size (- (.getFilePointer file) original-length)]
         {:offset original-length
          :size storage-size
-         :checksum (.digest digest)})))
+         :checksum checksum})))
 
 (defn write-to [target {:keys [flags key size format data]
                         :or {flags 0} :as image}]
@@ -92,17 +92,19 @@
     (write-to-file ra-file image)))
 
 (defn read-header [^RandomAccessFile ra-file & {:keys [digest]}]
-  (let [header-bytes (d/read-and-digest ra-file digest (partial io/read-bytes (alength header)))]
+  (let [header-bytes (io/read-bytes (alength header) ra-file)]
     (when-not (Arrays/equals header header-bytes)
       (throw (ex-info "Invalid header" {:header header-bytes})))
-    (let [flags (d/read-and-digest ra-file digest io/read-byte)
-          key-len (d/read-and-digest ra-file digest io/read-short)
-          key-buf (d/read-and-digest ra-file digest (partial io/read-bytes key-len))
+    (let [flags (io/read-byte ra-file)
+          key-len (io/read-short ra-file)
+          key-buf (io/read-bytes key-len ra-file)
           image-key (String. key-buf charset)
-          image-size (d/read-and-digest ra-file digest io/read-short)
-          format-code (d/read-and-digest ra-file digest io/read-byte)
+          image-size (io/read-short ra-file)
+          format-code (io/read-byte ra-file)
           image-format (code-to-format format-code)
-          data-len (d/read-and-digest ra-file digest io/read-int)]
+          data-len (io/read-int ra-file)]
+      (when digest
+        (d/update-digest digest header-bytes flags key-len key-buf image-size format-code data-len))
       {:flags       flags
        :key         image-key
        :size        image-size
@@ -113,19 +115,20 @@
   (let [digest (d/get-digest)
         original-pos (.getFilePointer ra-file)
         header (read-header ra-file :digest digest)
-        image-data (d/read-and-digest ra-file digest (partial io/read-bytes (:data-length header)))
-        digest-bytes (io/read-bytes d/digest-length ra-file)
+        image-data (io/read-bytes (:data-length header) ra-file)
+        checksum (io/read-bytes d/digest-length ra-file)
         padding-len (padding-length (.getFilePointer ra-file))
         _ (.skipBytes ra-file (int padding-len))
         stored-len (- (.getFilePointer ra-file) original-pos)
-        expected-digest-bytes (.digest digest)]
-    (if (Arrays/equals expected-digest-bytes digest-bytes)
+        _ (d/update-digest digest image-data)
+        expected-checksum (.digest digest)]
+    (if (Arrays/equals expected-checksum checksum)
       (assoc header
         :data image-data
         :stored-length stored-len
-        :checksum digest-bytes)
+        :checksum checksum)
       (throw (ex-info
-               "Image data does not match checksum"
+               "Image checksum does not match"
                {:key    key
                 :offset original-pos})))))
 

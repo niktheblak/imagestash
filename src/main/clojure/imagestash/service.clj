@@ -22,14 +22,19 @@
   (fn [request]
     (let [path (:uri request)]
       (if (= "/resize" path)
-        (handler request)
+        (if (and
+              (get-in request [:params "source"])
+              (get-in request [:params "size"]))
+          (handler request)
+          {:status 400
+           :headers {"Content-Type" "text/plain"}
+           :body   "Invalid parameters"})
         (not-found (str "Path" path " not found"))))))
 
 (defn handler [request]
   (let [source (get-in request [:params "source"])
         raw-size (get-in request [:params "size"])
         raw-format (get-in request [:params "format"] "jpeg")]
-    (if (and source raw-size)
       (let [size (Integer/parseInt raw-size)
             format (fmt/parse-format raw-format)
             image-source (br/from-internet-source source size :format format)]
@@ -37,9 +42,7 @@
           {:status  200
            :headers {"Content-Type" (fmt/format-mime-type (:format image))}
            :body    (:stream image)}
-          (not-found (str "Image with source " source " was not found"))))
-      {:status  400
-       :body    "Invalid parameters"})))
+          (not-found (str "Image with source " source " was not found"))))))
 
 (defn -main []
   (let [server (jet/run-jetty (params/wrap-params (accept-resize-route handler)) {:port 8080 :join? false})]

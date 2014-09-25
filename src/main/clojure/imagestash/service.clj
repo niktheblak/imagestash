@@ -13,10 +13,10 @@
 (defn- load-index []
   (let [file (File. index-file-name)]
     (if (.exists file)
-      (idx/load-index file)
+        (let [index (idx/load-index file)]
+          (println "Loaded" (count index) "images from index file" index-file-name)
+          index)
       {})))
-
-(def broker (br/create-broker 1 :index (load-index)))
 
 (defn accept-resize-route [handler]
   (fn [request]
@@ -31,7 +31,7 @@
            :body   "Invalid parameters"})
         (not-found (str "Path" path " not found"))))))
 
-(defn handler [request]
+(defn handler [broker request]
   (let [source (get-in request [:params "source"])
         raw-size (get-in request [:params "size"])
         raw-format (get-in request [:params "format"] "jpeg")]
@@ -45,9 +45,14 @@
           (not-found (str "Image with source " source " was not found"))))))
 
 (defn -main []
-  (let [server (jet/run-jetty (params/wrap-params (accept-resize-route handler)) {:port 8080 :join? false})]
+  (let [broker (br/create-broker 1 :index (load-index))
+        handler (accept-resize-route (partial handler broker))
+        server (jet/run-jetty (params/wrap-params handler) {:port 8080 :join? false})]
     (println "Started imagestash server. Press <ENTER> to quit...")
     (read-line)
+    (println "Stopping imagestash server")
     (.stop server)
+    (println "Saving index with" (count (:index @broker)) "images to file" index-file-name)
     (idx/save-index index-file-name (:index @broker))
-    (shutdown-agents)))
+    (shutdown-agents)
+    (println "System shutdown completed")))

@@ -19,7 +19,7 @@
   (testing "save index"
     (let [file (temp-file)
           _ (save-index file test-index)]
-      (is (= 361 (.length file))))))
+      (is (= 85 (.length file))))))
 
 (deftest index-roundtrip-test
   (testing "index save/load roundtrip"

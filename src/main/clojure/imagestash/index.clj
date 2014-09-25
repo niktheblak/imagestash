@@ -1,7 +1,8 @@
 (ns imagestash.index
-  (:import [java.io File RandomAccessFile]
+  (:import [java.io File RandomAccessFile DataOutputStream DataInputStream]
            [clojure.lang Keyword])
-  (:require [imagestash.stash :as iio]))
+  (:require [imagestash.stash :as stash]
+            [clojure.java.io :as jio]))
 
 (defrecord IndexKey [^String key ^Long size ^Keyword format])
 
@@ -11,17 +12,38 @@
   (str key size format))
 
 (defn save-index [target index]
-  (spit target index))
+  (with-open [output (DataOutputStream. (jio/output-stream target))]
+    (.writeInt output (count index))
+    (doseq [[k v] (seq index)]
+      (doto output
+        (.writeUTF (:key k))
+        (.writeInt (int (:size k)))
+        (.write (stash/format-to-code (:format k)))
+        (.writeLong (:offset v))
+        (.writeLong (:size v))))))
 
-(defn load-index [target]
-  (read-string (slurp target)))
+(defn load-index [source]
+  (with-open [input (DataInputStream. (jio/input-stream source))]
+    (let [index (atom {})
+          amount (.readInt input)]
+      (dotimes [i amount]
+        (let [key (.readUTF input)
+              image-size (.readInt input)
+              format-code (.readByte input)
+              format (stash/code-to-format format-code)
+              offset (.readLong input)
+              size (.readLong input)
+              k (IndexKey. key image-size format)
+              v (IndexValue. offset size)]
+          (swap! index assoc k v)))
+      @index)))
 
 (defn reconstruct-index [source]
   (with-open [ra-file (RandomAccessFile. source "r")]
     (loop [bytes-read 0
            images {}]
       (let [current-offset (.getFilePointer ra-file)
-            image (iio/read-from-file ra-file)
+            image (stash/read-from-file ra-file)
             new-bytes-read (+ bytes-read (:stored-length image))
             index-key (IndexKey. (:key image) (:size image) (:format image))
             value (IndexValue. current-offset (:stored-length image))

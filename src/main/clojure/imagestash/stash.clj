@@ -17,13 +17,13 @@
                    :png  1
                    :gif  2})
 
-(defn- format-to-code [format]
+(defn format-to-code [format]
   (let [code (get format-codes format)]
     (if (nil? code)
       (throw (ex-info "Invalid format" {:format format}))
       code)))
 
-(defn- code-to-format [format-code]
+(defn code-to-format [format-code]
   (let [code-formats (set/map-invert format-codes)
         format (get code-formats format-code)]
     (if (nil? format)

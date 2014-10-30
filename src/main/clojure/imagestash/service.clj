@@ -34,15 +34,18 @@
 (defn handler [broker request]
   (let [source (get-in request [:params "source"])
         raw-size (get-in request [:params "size"])
-        raw-format (get-in request [:params "format"] "jpeg")]
-      (let [size (Integer/parseInt raw-size)
-            format (fmt/parse-format raw-format)
-            image-source (br/from-internet-source source size :format format)]
-        (if-let [image (br/get-or-add-image broker image-source)]
-          {:status  200
-           :headers {"Content-Type" (fmt/format-mime-type (:format image))}
-           :body    (:stream image)}
-          (not-found (str "Image with source " source " was not found"))))))
+        raw-format (get-in request [:params "format"] "jpeg")
+        size (Integer/parseInt raw-size)
+        format (fmt/parse-format raw-format)
+        image-source (br/from-internet-source source size :format format)]
+    (if-let [image (br/get-or-add-image broker image-source)]
+      (let [length (alength (:data image))
+            stream (ByteArrayInputStream. (:data image))]
+        {:status  200
+         :headers {"Content-Type"   (fmt/format-mime-type (:format image))
+                   "Content-Length" (str length)}
+         :body    stream})
+      (not-found (str "Image with source " source " was not found")))))
 
 (defn -main []
   (let [broker (br/create-broker 1 :index (load-index))

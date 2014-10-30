@@ -75,7 +75,7 @@
         (.write channel buffer original-length)
         (assoc written-image :offset original-length)))))
 
-(defn- read-header-from-buffer [^ByteBuffer buffer & {:keys [digest]}]
+(defn- read-header-from-buffer [^ByteBuffer buffer digest]
   (let [header-on-disk (io/read-bytes-from-buffer buffer (alength header-bytes))]
     (when-not (Arrays/equals header-bytes header-on-disk)
       (throw (ex-info "Invalid header" {:header header-on-disk})))
@@ -87,8 +87,7 @@
           format-code (.get buffer)
           image-format (code-to-format format-code)
           data-len (.getInt buffer)]
-      (when digest
-        (d/update-digest digest header-bytes flags key-len key-buf image-size format-code data-len))
+      (d/update-digest digest header-bytes flags key-len key-buf image-size format-code data-len)
       {:flags       flags
        :key         image-key
        :size        image-size
@@ -101,7 +100,7 @@
   (let [digest (d/new-digest)
         original-pos (.position channel)
         buffer (io/read-from-channel channel size)
-        header (read-header-from-buffer buffer :digest digest)
+        header (read-header-from-buffer buffer digest)
         image-data (io/read-bytes-from-buffer buffer (:data-length header))
         checksum (io/read-bytes-from-buffer buffer d/digest-length)
         padding-len (padding-length (.position channel))
@@ -124,7 +123,5 @@
   (with-open [ra-file (RandomAccessFile. source "r")]
     (assert (<= (+ offset size) (.length ra-file)))
     (.seek ra-file offset)
-    (let [channel (.getChannel ra-file)
-          image (read-image-from-channel channel size)
-          stream (ByteArrayInputStream. (:data image))]
-      (assoc image :stream stream))))
+    (let [channel (.getChannel ra-file)]
+      (read-image-from-channel channel size))))

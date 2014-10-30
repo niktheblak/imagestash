@@ -1,6 +1,5 @@
 (ns imagestash.broker
-  (:import [java.io File RandomAccessFile]
-           [java.security MessageDigest]
+  (:import [java.io File]
            [imagestash.j Base58]
            [java.net URL URI MalformedURLException])
   (:require [clojure.java.io :as jio]
@@ -77,18 +76,16 @@
          (format/supported-format? format)]}
   (let [index (:index @broker)
         storage (:storage @broker)
-        index-key (index/->IndexKey key size format)
-        image (get index index-key)]
-    (if image
-      (snio/read-image-from-file storage (:offset image) (:size image))
+        index-key (index/->IndexKey key size format)]
+    (if-let [image-pointer (get index index-key)]
+      (snio/read-image-from-file storage (:offset image-pointer) (:size image-pointer))
       nil)))
 
 (defn get-or-add-image [broker image]
   {:pre [(:source image)]}
-  (let [cached-image (get-image broker image)]
-    (if cached-image
-      cached-image
-      (do
-        (add-image broker image)
-        (await-for 30000 broker)
-        (get-image broker image)))))
+  (if-let [cached-image (get-image broker image)]
+    cached-image
+    (do
+      (add-image broker image)
+      (await-for 30000 broker)
+      (get-image broker image))))

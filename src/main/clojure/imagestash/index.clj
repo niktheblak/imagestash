@@ -1,7 +1,8 @@
 (ns imagestash.index
   (:import [java.io File RandomAccessFile DataOutputStream DataInputStream]
            [clojure.lang Keyword])
-  (:require [imagestash.stash :as stash]
+  (:require [imagestash.stash-core :as score]
+            [imagestash.stash-io :as sra]
             [clojure.java.io :as jio]))
 
 (defrecord IndexKey [^String key ^Long size ^Keyword format])
@@ -18,7 +19,7 @@
       (doto output
         (.writeUTF (:key k))
         (.writeInt (int (:size k)))
-        (.write (stash/format-to-code (:format k)))
+        (.write (score/format-to-code (:format k)))
         (.writeLong (:offset v))
         (.writeLong (:size v))))))
 
@@ -30,7 +31,7 @@
         (let [key (.readUTF input)
               image-size (.readInt input)
               format-code (.readByte input)
-              format (stash/code-to-format format-code)
+              format (score/code-to-format format-code)
               offset (.readLong input)
               size (.readLong input)
               k (IndexKey. key image-size format)
@@ -43,7 +44,7 @@
     (loop [bytes-read 0
            images {}]
       (let [current-offset (.getFilePointer ra-file)
-            image (stash/read-from-file ra-file)
+            image (sra/read-image-from-random-access-file ra-file)
             new-bytes-read (+ bytes-read (:stored-length image))
             index-key (IndexKey. (:key image) (:size image) (:format image))
             value (IndexValue. current-offset (:stored-length image))

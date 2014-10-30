@@ -2,7 +2,7 @@
   (:import [java.io File]
            [java.util Arrays Random])
   (:require [clojure.test :refer :all]
-            [imagestash.stash :as stash]
+            [imagestash.stash-io :as stash]
             [imagestash.test-utils :refer :all]
             [imagestash.index :refer :all]))
 
@@ -34,8 +34,8 @@
           img1 (test-image "img1" 125)
           img2 (test-image "img2" 125)
           img3 (test-image "img3" 125)]
-      (stash/write-to file img1)
-      (stash/write-to file img2)
-      (stash/write-to file img3)
+      (stash/write-image-to-file file img1)
+      (stash/write-image-to-file file img2)
+      (stash/write-image-to-file file img3)
       (let [index (reconstruct-index file)]
         (is (= test-index index))))))

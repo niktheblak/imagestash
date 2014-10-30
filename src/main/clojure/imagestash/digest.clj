@@ -3,10 +3,13 @@
            [java.io DataInput DataOutput])
   (:require [imagestash.io :as io]))
 
-(defn get-digest []
+(defn new-digest []
   (MessageDigest/getInstance "MD5"))
 
-(def digest-length (.getDigestLength (get-digest)))
+(defn get-digest [^MessageDigest digest]
+  (.digest digest))
+
+(def digest-length (.getDigestLength (new-digest)))
 
 (defn update-digest-int [^MessageDigest digest n]
   (let [b4 (bit-and n 0xFF)
@@ -32,7 +35,7 @@
 
 (defn digest [& items]
   {:post [(io/byte-array? %)]}
-  (let [digest (get-digest)]
+  (let [digest (new-digest)]
     (doseq [item items]
       (update-digest digest item))
     (.digest digest)))

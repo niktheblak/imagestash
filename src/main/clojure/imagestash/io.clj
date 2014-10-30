@@ -2,7 +2,8 @@
   (:import [java.io InputStream DataInput DataOutput]
            [java.util Arrays]
            [java.nio.charset Charset]
-           [java.nio ByteBuffer]))
+           [java.nio ByteBuffer]
+           [java.nio.channels FileChannel]))
 
 (def default-charset (Charset/forName "UTF-8"))
 
@@ -71,3 +72,9 @@
 
 (defn skip-buffer [^ByteBuffer buffer n]
   (.position buffer (+ (.position buffer) n)))
+
+(defn read-from-channel [^FileChannel channel size]
+  (let [buffer (ByteBuffer/allocate size)]
+    (.read channel buffer)
+    (.rewind buffer)
+    buffer))

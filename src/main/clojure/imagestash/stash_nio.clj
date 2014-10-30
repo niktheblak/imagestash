@@ -4,15 +4,81 @@
            [java.nio.charset Charset]
            [java.nio ByteBuffer]
            [java.nio.channels FileChannel])
-  (:require [clojure.set :as set]
-            [imagestash.stash-core :refer :all]
+  (:require [imagestash.stash-core :refer :all]
+            [imagestash.format :as format]
             [imagestash.digest :as d]
             [imagestash.io :as io]))
 
+(defn- write-padding-buffer [^ByteBuffer buffer]
+  (let [pos (.position buffer)
+        len (padding-length pos)]
+    (dotimes [i len]
+      (.put buffer (byte 0)))))
+
+(defn- write-header-to-buffer [^ByteBuffer buffer digest {:keys [flags key size format data]
+                                                          :or   {flags 0}}]
+  (let [key-bytes (.getBytes key charset)
+        format-code (format-to-code (format/parse-format format))]
+    (doto buffer
+      (.put header-bytes)
+      (.put (unchecked-byte flags))
+      (.putShort (short (alength key-bytes)))
+      (.put key-bytes)
+      (.putShort (short size))
+      (.put (byte format-code))
+      (.putInt (alength data)))
+    (d/update-digest digest
+                     header-bytes
+                     flags
+                     (alength key-bytes)
+                     key-bytes
+                     size
+                     format-code
+                     (alength data))))
+
+(defn- write-data-to-buffer [^ByteBuffer buffer digest data]
+  (.put buffer data)
+  (d/update-digest digest data))
+
+(defn- write-image-to-buffer [^ByteBuffer buffer {:keys [flags key size format data]
+                                                  :or   {flags 0} :as header}]
+  {:pre [(string? key)
+         (number? size)
+         (format/supported-format? format)
+         (io/byte-array? data)]}
+  (let [digest (d/new-digest)
+        original-length (.position buffer)]
+    (doto buffer
+      (write-header-to-buffer digest header)
+      (write-data-to-buffer digest data)
+      (.put (d/get-digest digest))
+      (write-padding-buffer))
+    (let [storage-size (- (.position buffer) original-length)]
+      {:size     storage-size
+       :checksum (d/get-digest digest)})))
+
+(defn write-image-to-file [target {:keys [flags key size format data]
+                                   :or   {flags 0} :as image}]
+  {:pre [(string? key)
+         (number? size)
+         (format/supported-format? format)
+         (io/byte-array? data)]}
+  (with-open [ra-file (RandomAccessFile. target "rw")]
+    (let [original-length (.length ra-file)]
+      (let [size (size-on-disk image)
+            buffer (ByteBuffer/allocate size)
+            channel (.getChannel ra-file)
+            written-image (write-image-to-buffer buffer image)]
+        (assert (= size (:size written-image)))
+        (assert (= 0 (.remaining buffer)))
+        (.rewind buffer)
+        (.write channel buffer original-length)
+        (assoc written-image :offset original-length)))))
+
 (defn- read-header-from-buffer [^ByteBuffer buffer & {:keys [digest]}]
-  (let [header-bytes (io/read-bytes-from-buffer buffer (alength header-bytes))]
-    (when-not (Arrays/equals header-bytes header-bytes)
-      (throw (ex-info "Invalid header" {:header header-bytes})))
+  (let [header-on-disk (io/read-bytes-from-buffer buffer (alength header-bytes))]
+    (when-not (Arrays/equals header-bytes header-on-disk)
+      (throw (ex-info "Invalid header" {:header header-on-disk})))
     (let [flags (.get buffer)
           key-len (.getShort buffer)
           key-buf (io/read-bytes-from-buffer buffer key-len)
@@ -54,7 +120,9 @@
                 :offset original-pos})))))
 
 (defn read-image-from-file [source offset size]
+  {:pre [(pos? size)]}
   (with-open [ra-file (RandomAccessFile. source "r")]
+    (assert (<= (+ offset size) (.length ra-file)))
     (.seek ra-file offset)
     (let [channel (.getChannel ra-file)
           image (read-image-from-channel channel size)

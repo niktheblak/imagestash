@@ -1,8 +1,7 @@
 (ns imagestash.stash-io
   (:import [java.io RandomAccessFile]
            [java.util Arrays])
-  (:require [clojure.set :as set]
-            [imagestash.stash-core :refer :all]
+  (:require [imagestash.stash-core :refer :all]
             [imagestash.format :as format]
             [imagestash.digest :as d]
             [imagestash.io :as io]))
@@ -44,7 +43,7 @@
        :checksum (d/get-digest digest)})))
 
 (defn write-image-to-file [target {:keys [flags key size format data]
-                        :or {flags 0} :as image}]
+                                   :or   {flags 0} :as image}]
   {:pre [(string? key)
          (number? size)
          (format/supported-format? format)

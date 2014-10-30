@@ -63,3 +63,11 @@
 
 (defn write-int [^DataOutput output n]
   (.writeInt output n))
+
+(defn read-bytes-from-buffer [^ByteBuffer buffer n]
+  (let [data (byte-array n)]
+    (.get buffer data)
+    data))
+
+(defn skip-buffer [^ByteBuffer buffer n]
+  (.position buffer (+ (.position buffer) n)))

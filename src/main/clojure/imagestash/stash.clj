@@ -1,9 +1,11 @@
 (ns imagestash.stash
   (:import [imagestash.j RandomAccessFileInputStream]
-           [java.io RandomAccessFile]
+           [java.io RandomAccessFile ByteArrayInputStream]
            [java.util Arrays]
            [java.nio.charset Charset]
-           [java.security MessageDigest])
+           [java.security MessageDigest]
+           [java.nio ByteBuffer]
+           [java.nio.channels FileChannel])
   (:require [clojure.set :as set]
             [imagestash.format :as format]
             [imagestash.digest :as d]
@@ -137,10 +139,60 @@
     (.seek ra-file offset)
     (read-from-file ra-file)))
 
-(defn get-image-stream [source offset]
-  (let [ra-file (RandomAccessFile. source "r")]
+(defn read-header-from-buffer [^ByteBuffer buffer & {:keys [digest]}]
+  (let [header-bytes (io/read-bytes-from-buffer buffer (alength header))]
+    (when-not (Arrays/equals header header-bytes)
+      (throw (ex-info "Invalid header" {:header header-bytes})))
+    (let [flags (.get buffer)
+          key-len (.getShort buffer)
+          key-buf (io/read-bytes-from-buffer buffer key-len)
+          image-key (String. key-buf charset)
+          image-size (.getShort buffer)
+          format-code (.get buffer)
+          image-format (code-to-format format-code)
+          data-len (.getInt buffer)]
+      (when digest
+        (d/update-digest digest header-bytes flags key-len key-buf image-size format-code data-len))
+      {:flags       flags
+       :key         image-key
+       :size        image-size
+       :format      image-format
+       :data-length data-len})))
+
+(defn- read-data-from-channel [^FileChannel channel size]
+  (let [buffer (ByteBuffer/allocate size)]
+    (.read channel buffer)
+    (.rewind buffer)
+    buffer))
+
+(defn read-from-channel [^FileChannel channel size]
+  {:pre [(pos? size)
+         (>= (.size channel) (+ (.position channel) size))]}
+  (let [digest (d/get-digest)
+        original-pos (.position channel)
+        buffer (read-data-from-channel channel size)
+        header (read-header-from-buffer buffer :digest digest)
+        image-data (io/read-bytes-from-buffer buffer (:data-length header))
+        checksum (io/read-bytes-from-buffer buffer d/digest-length)
+        padding-len (padding-length (.position channel))
+        _ (io/skip-buffer buffer (int padding-len))
+        stored-len (- (.position channel) original-pos)
+        _ (d/update-digest digest image-data)
+        expected-checksum (.digest digest)]
+    (if (Arrays/equals expected-checksum checksum)
+      (assoc header
+             :data image-data
+             :stored-length stored-len
+             :checksum checksum)
+      (throw (ex-info
+               "Image checksum does not match"
+               {:key    key
+                :offset original-pos})))))
+
+(defn get-image-stream [source offset size]
+  (with-open [ra-file (RandomAccessFile. source "r")]
     (.seek ra-file offset)
-    (let [header (read-header ra-file)
-          data-len (:data-length header)
-          stream (RandomAccessFileInputStream. ra-file data-len)]
-      (assoc header :stream stream))))
+    (let [channel (.getChannel ra-file)
+          image (read-from-channel channel size)
+          stream (ByteArrayInputStream. (:data image))]
+      (assoc image :stream stream))))

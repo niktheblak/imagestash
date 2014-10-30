@@ -80,7 +80,7 @@
         index-key (index/->IndexKey key size format)
         image (get index index-key)]
     (if image
-      (stash/get-image-stream storage (:offset image))
+      (stash/get-image-stream storage (:offset image) (:size image))
       nil)))
 
 (defn get-or-add-image [broker image]

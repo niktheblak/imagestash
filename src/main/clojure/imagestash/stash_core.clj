@@ -44,9 +44,3 @@
                d/digest-length                              ; digest length
                )]
     (+ len (padding-length len))))
-
-(defn write-padding [^RandomAccessFile file]
-  (let [pos (.getFilePointer file)
-        len (padding-length pos)]
-    (dotimes [i len]
-      (.write file 0))))

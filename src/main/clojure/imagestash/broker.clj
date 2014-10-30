@@ -6,7 +6,6 @@
   (:require [clojure.java.io :as jio]
             [imagestash.io :as io]
             [imagestash.digest :as d]
-            [imagestash.stash-io :as sra]
             [imagestash.stash-nio :as snio]
             [imagestash.index :as index]
             [imagestash.resize :as resize]
@@ -61,7 +60,7 @@
         index-key (index/->IndexKey key size format)
         resized-image-data (resize/resize-image source size format)
         resized-image (assoc image :data resized-image-data)
-        stored-image (sra/write-image-to-file storage resized-image)
+        stored-image (snio/write-image-to-file storage resized-image)
         value (index/->IndexValue (:offset stored-image) (:size stored-image))]
     (assoc-in broker [:index index-key] value)))
 

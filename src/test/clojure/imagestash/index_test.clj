@@ -2,7 +2,7 @@
   (:import [java.io File]
            [java.util Arrays Random])
   (:require [clojure.test :refer :all]
-            [imagestash.stash-io :as stash]
+            [imagestash.stash-nio :as stash]
             [imagestash.test-utils :refer :all]
             [imagestash.index :refer :all]))
 

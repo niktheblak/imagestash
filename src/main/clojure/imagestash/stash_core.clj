@@ -13,14 +13,15 @@
                    :png  1
                    :gif  2})
 
+(def code-formats (set/map-invert format-codes))
+
 (defn format-to-code [format]
   {:post [%]}
   (get format-codes format))
 
 (defn code-to-format [format-code]
   {:post [%]}
-  (let [code-formats (set/map-invert format-codes)]
-    (get code-formats format-code)))
+  (get code-formats format-code))
 
 (defn padding-length [position]
   {:pre [(pos? position)]

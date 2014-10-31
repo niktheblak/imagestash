@@ -101,19 +101,16 @@
         image-data (io/read-bytes-from-buffer buffer (:data-length header))
         checksum (io/read-bytes-from-buffer buffer d/digest-length)
         padding-len (padding-length (.position buffer))
-        _ (io/skip-buffer buffer (int padding-len))
+        _ (io/skip-buffer buffer padding-len)
         stored-len (- (.position buffer) original-pos)
         _ (d/update-digest digest image-data)
         expected-checksum (d/get-digest digest)]
-    (if (Arrays/equals expected-checksum checksum)
-      (assoc header
-             :data image-data
-             :stored-length stored-len
-             :checksum checksum)
-      (throw (ex-info
-               "Image checksum does not match"
-               {:key    key
-                :offset original-pos})))))
+    (when (not (Arrays/equals expected-checksum checksum))
+      (throw (ex-info "Image checksum does not match" {:key key})))
+    (assoc header
+           :data image-data
+           :stored-length stored-len
+           :checksum checksum)))
 
 (defn read-image-from-channel [^FileChannel channel size]
   {:pre [(pos? size)

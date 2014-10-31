@@ -94,18 +94,15 @@
        :format      image-format
        :data-length data-len})))
 
-(defn read-image-from-channel [^FileChannel channel size]
-  {:pre [(pos? size)
-         (>= (.size channel) (+ (.position channel) size))]}
+(defn read-image-from-buffer [^ByteBuffer buffer]
   (let [digest (d/new-digest)
-        original-pos (.position channel)
-        buffer (io/read-from-channel channel size)
+        original-pos (.position buffer)
         header (read-header-from-buffer buffer digest)
         image-data (io/read-bytes-from-buffer buffer (:data-length header))
         checksum (io/read-bytes-from-buffer buffer d/digest-length)
-        padding-len (padding-length (.position channel))
+        padding-len (padding-length (.position buffer))
         _ (io/skip-buffer buffer (int padding-len))
-        stored-len (- (.position channel) original-pos)
+        stored-len (- (.position buffer) original-pos)
         _ (d/update-digest digest image-data)
         expected-checksum (d/get-digest digest)]
     (if (Arrays/equals expected-checksum checksum)
@@ -117,6 +114,12 @@
                "Image checksum does not match"
                {:key    key
                 :offset original-pos})))))
+
+(defn read-image-from-channel [^FileChannel channel size]
+  {:pre [(pos? size)
+         (>= (.size channel) (+ (.position channel) size))]}
+  (let [buffer (io/read-from-channel channel size)]
+    (read-image-from-buffer buffer)))
 
 (defn read-image-from-file [source offset size]
   {:pre [(pos? size)]}

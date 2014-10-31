@@ -12,30 +12,37 @@
 (defn index-key [{:keys [key size format]}]
   (str key size format))
 
+(defn- read-index-item [^DataInputStream input]
+  (let [key (.readUTF input)
+        image-size (.readInt input)
+        format-code (.readByte input)
+        format (stash/code-to-format format-code)
+        offset (.readLong input)
+        size (.readLong input)
+        k (IndexKey. key image-size format)
+        v (IndexValue. offset size)]
+    [k v]))
+
+(defn- write-index-item [^DataOutputStream output k v]
+  (doto output
+    (.writeUTF (:key k))
+    (.writeInt (int (:size k)))
+    (.write (stash/format-to-code (:format k)))
+    (.writeLong (:offset v))
+    (.writeLong (:size v))))
+
 (defn save-index [target index]
   (with-open [output (DataOutputStream. (jio/output-stream target))]
     (.writeInt output (count index))
     (doseq [[k v] (seq index)]
-      (doto output
-        (.writeUTF (:key k))
-        (.writeInt (int (:size k)))
-        (.write (stash/format-to-code (:format k)))
-        (.writeLong (:offset v))
-        (.writeLong (:size v))))))
+      (write-index-item output k v))))
 
 (defn load-index [source]
   (with-open [input (DataInputStream. (jio/input-stream source))]
     (let [index (atom {})
           amount (.readInt input)]
       (dotimes [i amount]
-        (let [key (.readUTF input)
-              image-size (.readInt input)
-              format-code (.readByte input)
-              format (stash/code-to-format format-code)
-              offset (.readLong input)
-              size (.readLong input)
-              k (IndexKey. key image-size format)
-              v (IndexValue. offset size)]
+        (let [[k v] (read-index-item input)]
           (swap! index assoc k v)))
       @index)))
 

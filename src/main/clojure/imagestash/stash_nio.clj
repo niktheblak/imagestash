@@ -1,9 +1,10 @@
 (ns imagestash.stash-nio
-  (:import [java.io RandomAccessFile ByteArrayInputStream]
+  (:import [java.io File]
            [java.util Arrays]
            [java.nio.charset Charset]
            [java.nio ByteBuffer]
-           [java.nio.channels FileChannel])
+           [java.nio.channels FileChannel]
+           [imagestash.j FileChannels])
   (:require [imagestash.stash-core :refer :all]
             [imagestash.format :as format]
             [imagestash.digest :as d]
@@ -63,11 +64,11 @@
          (number? size)
          (format/supported-format? format)
          (io/byte-array? data)]}
-  (with-open [ra-file (RandomAccessFile. target "rw")]
-    (let [original-length (.length ra-file)]
+  (with-open [channel (FileChannels/append target)]
+    (assert (= (.size channel) (.position channel)) "Channel is not opened at file end")
+    (let [original-length (.size channel)]
       (let [size (size-on-disk image)
             buffer (ByteBuffer/allocate size)
-            channel (.getChannel ra-file)
             written-image (write-image-to-buffer buffer image)]
         (assert (= size (:size written-image)))
         (assert (= 0 (.remaining buffer)))
@@ -112,16 +113,13 @@
            :stored-length stored-len
            :checksum checksum)))
 
-(defn read-image-from-channel [^FileChannel channel size]
+(defn read-image-from-channel [^FileChannel channel position size]
   {:pre [(pos? size)
-         (>= (.size channel) (+ (.position channel) size))]}
-  (let [buffer (io/read-from-channel channel size)]
+         (>= (.size channel) (+ position size))]}
+  (let [buffer (io/read-from-channel channel position size)]
     (read-image-from-buffer buffer)))
 
-(defn read-image-from-file [source offset size]
+(defn read-image-from-file [source position size]
   {:pre [(pos? size)]}
-  (with-open [ra-file (RandomAccessFile. source "r")]
-    (assert (<= (+ offset size) (.length ra-file)))
-    (.seek ra-file offset)
-    (let [channel (.getChannel ra-file)]
-      (read-image-from-channel channel size))))
+  (with-open [channel (FileChannels/read source)]
+    (read-image-from-channel channel position size)))

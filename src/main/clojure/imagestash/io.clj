@@ -73,8 +73,8 @@
 (defn skip-buffer [^ByteBuffer buffer n]
   (.position buffer (+ (.position buffer) n)))
 
-(defn read-from-channel [^FileChannel channel size]
+(defn read-from-channel [^FileChannel channel position size]
   (let [buffer (ByteBuffer/allocate size)]
-    (.read channel buffer)
+    (.read channel buffer position)
     (.rewind buffer)
     buffer))

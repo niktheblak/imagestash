@@ -105,7 +105,7 @@
         stored-len (- (.position buffer) original-pos)
         _ (d/update-digest digest image-data)
         expected-checksum (d/get-digest digest)]
-    (when (not (Arrays/equals expected-checksum checksum))
+    (when-not (Arrays/equals expected-checksum checksum)
       (throw (ex-info "Image checksum does not match" {:key key})))
     (assoc header
            :data image-data

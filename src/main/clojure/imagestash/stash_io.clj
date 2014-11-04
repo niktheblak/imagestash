@@ -37,7 +37,7 @@
         stored-len (- (.getFilePointer ra-file) original-pos)
         _ (d/update-digest digest image-data)
         expected-checksum (d/get-digest digest)]
-    (when (not (Arrays/equals expected-checksum checksum))
+    (when-not (Arrays/equals expected-checksum checksum)
       (throw (ex-info
                "Image checksum does not match"
                {:key    key

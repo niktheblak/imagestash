@@ -24,18 +24,17 @@
 (defmethod to-readable-source File [source] source)
 (defmethod to-readable-source String [source]
   (try (URL. source)
-       (catch MalformedURLException e
-         (let [file (File. source)]
-           (if (.exists file)
-             file
-             nil)))))
+     (catch MalformedURLException e
+       (let [file (File. source)]
+         (if (.exists file)
+           file
+           nil)))))
 (defmethod to-readable-source :default [x] nil)
 
 (defn- read-from [source]
-  (let [src (to-readable-source source)]
-    (if src
-      (ImageIO/read src)
-      (throw (ex-info "Unsupported source" {:source source})))))
+  (if-let [src (to-readable-source source)]
+    (ImageIO/read src)
+    (throw (ex-info "Unsupported source" {:source source}))))
 
 (defn supported-source? [source]
   (to-readable-source source))
@@ -50,5 +49,6 @@
                resized (resize image size)]
     (let [output (ByteArrayOutputStream.)
           format-str (format/format-name format)]
+      ; TODO: Add support for writing directly to OutputStream/ByteBuffer
       (ImageIO/write resized format-str output)
       (.toByteArray output))))

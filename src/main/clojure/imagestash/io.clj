@@ -1,5 +1,5 @@
 (ns imagestash.io
-  (:import [java.io InputStream DataInput DataOutput]
+  (:import [java.io InputStream DataInput]
            [java.util Arrays]
            [java.nio.charset Charset]
            [java.nio ByteBuffer]
@@ -51,19 +51,6 @@
   (let [buf (byte-array n)]
     (.readFully input buf)
     buf))
-
-(defn write-byte [^DataOutput output n]
-  (.writeByte output (int n)))
-
-(defn write-bytes [^DataOutput output data]
-  {:pre [(byte-array? data)]}
-  (.write output data))
-
-(defn write-short [^DataOutput output n]
-  (.writeShort output (int n)))
-
-(defn write-int [^DataOutput output n]
-  (.writeInt output n))
 
 (defn read-bytes-from-buffer [^ByteBuffer buffer n]
   (let [data (byte-array n)]

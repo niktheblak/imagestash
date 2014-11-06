@@ -87,5 +87,6 @@
     cached-image
     (do
       (add-image broker image)
+      ; TODO: Figure out a way to do this more efficiently/robustly
       (await-for 30000 broker)
       (get-image broker image))))

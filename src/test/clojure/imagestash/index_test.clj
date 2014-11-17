@@ -1,6 +1,4 @@
 (ns imagestash.index-test
-  (:import [java.io File]
-           [java.util Arrays Random])
   (:require [clojure.test :refer :all]
             [imagestash.stash-nio :as stash]
             [imagestash.test-utils :refer :all]

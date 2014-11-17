@@ -2,7 +2,6 @@
   (:import [java.io RandomAccessFile]
            [java.util Arrays])
   (:require [imagestash.stash-core :refer :all]
-            [imagestash.format :as format]
             [imagestash.digest :as d]
             [imagestash.io :as io]))
 

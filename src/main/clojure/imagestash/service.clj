@@ -1,6 +1,5 @@
 (ns imagestash.service
-  (:import [java.net URI]
-           [java.io ByteArrayInputStream File])
+  (:import [java.io ByteArrayInputStream File])
   (:require [imagestash.broker :as br]
             [imagestash.format :as fmt]
             [imagestash.index :as idx]

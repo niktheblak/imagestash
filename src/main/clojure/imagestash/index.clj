@@ -1,5 +1,5 @@
 (ns imagestash.index
-  (:import [java.io File RandomAccessFile DataOutputStream DataInputStream]
+  (:import [java.io RandomAccessFile DataOutputStream DataInputStream]
            [clojure.lang Keyword])
   (:require [imagestash.stash-core :as stash]
             [imagestash.stash-io :as sio]
@@ -8,9 +8,6 @@
 (defrecord IndexKey [^String key ^Long size ^Keyword format])
 
 (defrecord IndexValue [^Long offset ^Long size])
-
-(defn index-key [{:keys [key size format]}]
-  (str key size format))
 
 (defn- read-index-item [^DataInputStream input]
   (let [key (.readUTF input)

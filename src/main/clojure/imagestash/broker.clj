@@ -1,10 +1,8 @@
 (ns imagestash.broker
   (:import [java.io File]
            [imagestash.j Base58]
-           [java.net URL URI MalformedURLException])
-  (:require [clojure.java.io :as jio]
-            [imagestash.io :as io]
-            [imagestash.digest :as d]
+           [java.net URL URI])
+  (:require [imagestash.digest :as d]
             [imagestash.stash-nio :as snio]
             [imagestash.index :as index]
             [imagestash.resize :as resize]

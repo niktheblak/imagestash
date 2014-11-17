@@ -1,9 +1,8 @@
 (ns imagestash.stash-io-test
-  (:import [java.io File RandomAccessFile]
-           [java.util Arrays Random])
+  (:import [java.io RandomAccessFile]
+           [java.util Arrays])
   (:require [clojure.test :refer :all]
             [imagestash.test-utils :refer :all]
-            [imagestash.stash-core :as stash]
             [imagestash.stash-io :as sio]
             [imagestash.stash-nio :as nio]))
 

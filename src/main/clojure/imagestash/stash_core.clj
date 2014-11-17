@@ -1,9 +1,7 @@
 (ns imagestash.stash-core
-  (:import [java.io RandomAccessFile]
-           [java.nio.charset Charset])
+  (:import [java.nio.charset Charset])
   (:require [clojure.set :as set]
-            [imagestash.digest :as d]
-            [imagestash.io :as io]))
+            [imagestash.digest :as d]))
 
 (def charset (Charset/forName "US-ASCII"))
 

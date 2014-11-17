@@ -1,7 +1,6 @@
 (ns imagestash.resize-test
   (:import [java.io File ByteArrayInputStream]
-           [javax.imageio ImageIO]
-           [java.awt.image BufferedImage])
+           [javax.imageio ImageIO])
   (:require [clojure.test :refer :all]
             [imagestash.resize :as resize]))
 

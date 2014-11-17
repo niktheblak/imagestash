@@ -1,7 +1,5 @@
 (ns imagestash.stash-nio
-  (:import [java.io File]
-           [java.util Arrays]
-           [java.nio.charset Charset]
+  (:import [java.util Arrays]
            [java.nio ByteBuffer]
            [java.nio.channels FileChannel]
            [imagestash.j FileChannels])
@@ -13,7 +11,7 @@
 (defn- write-padding-buffer [^ByteBuffer buffer]
   (let [pos (.position buffer)
         len (padding-length pos)]
-    (dotimes [i len]
+    (dotimes [_ len]
       (.put buffer (byte 0)))))
 
 (defn- write-header-to-buffer [^ByteBuffer buffer digest {:keys [flags key size format data]
@@ -41,17 +39,12 @@
   (.put buffer data)
   (d/update-digest digest data))
 
-(defn- write-image-to-buffer [^ByteBuffer buffer {:keys [flags key size format data]
-                                                  :or   {flags 0} :as header}]
-  {:pre [(string? key)
-         (number? size)
-         (format/supported-format? format)
-         (io/byte-array? data)]}
+(defn- write-image-to-buffer [^ByteBuffer buffer image]
   (let [digest (d/new-digest)
         original-length (.position buffer)]
     (doto buffer
-      (write-header-to-buffer digest header)
-      (write-data-to-buffer digest data)
+      (write-header-to-buffer digest image)
+      (write-data-to-buffer digest (:data image))
       (.put (d/get-digest digest))
       (write-padding-buffer))
     (let [storage-size (- (.position buffer) original-length)]
@@ -66,15 +59,15 @@
          (io/byte-array? data)]}
   (with-open [channel (FileChannels/append target)]
     (assert (= (.size channel) (.position channel)) "Channel is not opened at file end")
-    (let [original-length (.size channel)]
-      (let [size (size-on-disk image)
-            buffer (ByteBuffer/allocate size)
-            written-image (write-image-to-buffer buffer image)]
-        (assert (= size (:size written-image)))
-        (assert (= 0 (.remaining buffer)))
-        (.rewind buffer)
-        (.write channel buffer original-length)
-        (assoc written-image :offset original-length)))))
+    (let [original-length (.size channel)
+          size (size-on-disk image)
+          buffer (ByteBuffer/allocate size)
+          written-image (write-image-to-buffer buffer image)]
+      (assert (= size (:size written-image)))
+      (assert (= 0 (.remaining buffer)))
+      (.rewind buffer)
+      (.write channel buffer original-length)
+      (assoc written-image :offset original-length))))
 
 (defn- read-header-from-buffer [^ByteBuffer buffer digest]
   (let [header-on-disk (io/read-bytes-from-buffer buffer (alength header-bytes))]

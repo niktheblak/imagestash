@@ -1,6 +1,5 @@
 (ns imagestash.digest
-  (:import [java.security MessageDigest]
-           [java.io DataInput DataOutput])
+  (:import [java.security MessageDigest])
   (:require [imagestash.io :as io]))
 
 (defn new-digest []
@@ -28,10 +27,6 @@
       (and (integer? data) (<= data 255)) (.update digest (unchecked-byte data))
       (integer? data) (update-digest-int digest data)
       :else (.update digest (io/to-bytes data)))))
-
-(defn write-and-digest [^DataOutput output ^MessageDigest digest data write-fn]
-  (write-fn output data)
-  (update-digest digest data))
 
 (defn digest [& items]
   {:post [(io/byte-array? %)]}

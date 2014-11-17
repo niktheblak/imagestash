@@ -53,15 +53,21 @@
     buf))
 
 (defn read-bytes-from-buffer [^ByteBuffer buffer n]
+  {:pre [(>= (.remaining buffer) n)]
+   :post [(= (alength %) n)]}
   (let [data (byte-array n)]
     (.get buffer data)
     data))
 
 (defn skip-buffer [^ByteBuffer buffer n]
+  {:pre [(>= (.remaining buffer) n)]}
   (.position buffer (+ (.position buffer) n)))
 
 (defn read-from-channel [^FileChannel channel position size]
-  (let [buffer (ByteBuffer/allocate size)]
-    (.read channel buffer position)
+  {:pre [(>= (.size channel) (+ position size))]
+   :post [(= (.remaining %) size)]}
+  (let [buffer (ByteBuffer/allocate size)
+        bytes-read (.read channel buffer position)]
+    (assert (= bytes-read size) "Could not read requested amount of bytes")
     (.rewind buffer)
     buffer))

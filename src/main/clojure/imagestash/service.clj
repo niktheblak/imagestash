@@ -8,28 +8,34 @@
             [ring.util.response :as response]
             [ring.middleware.defaults :as rmd]))
 
-(def index-file-name "index.bin")
+(def index-file (File. "index.bin"))
+
+(def broker-storage-file (br/storage-file 1))
 
 (def broker (ref nil))
 
-(defn load-index [file-name]
-  (let [file (File. file-name)]
-    (if (.exists file)
-        (let [index (idx/load-index file)]
-          (println "Loaded" (count index) "images from index file" index-file-name)
-          index)
-      {})))
+(defn load-index []
+  (cond
+    (.exists index-file) (let [index (idx/load-index index-file)]
+                           (println "Loaded" (count index) "images from index file" index-file)
+                           index)
+    (.exists broker-storage-file) (let [index (idx/reconstruct-index broker-storage-file)]
+                                    (println "Reconstructed index with" (count index) "images from storage file" broker-storage-file)
+                                    index)
+    :else (do
+            (println "Starting with empty index")
+            {})))
 
 (defn start []
-  (let [index (load-index index-file-name)
+  (let [index (load-index)
         br (br/create-broker 1 :index index)]
     (dosync
       (ref-set broker br)))
   (println "Started imagestash server"))
 
 (defn stop []
-  (println "Saving index with" (count (:index @broker)) "images to file" index-file-name)
-  (idx/save-index index-file-name (:index @broker))
+  (println "Saving index with" (count (:index @broker)) "images to file" index-file)
+  (idx/save-index index-file (:index @broker))
   (shutdown-agents)
   (println "System shutdown completed"))
 

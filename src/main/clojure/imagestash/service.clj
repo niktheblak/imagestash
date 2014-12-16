@@ -5,7 +5,8 @@
             [imagestash.index :as idx]
             [compojure.core :refer :all]
             [compojure.handler :as handler]
-            [ring.middleware.defaults :as rmd]))
+            [ring.middleware.defaults :as rmd]
+            [clojure.tools.logging :as log]))
 
 (def index-file (File. "index.bin"))
 
@@ -16,13 +17,13 @@
 (defn load-index []
   (cond
     (.exists index-file) (let [index (idx/load-index index-file)]
-                           (println "Loaded" (count index) "images from index file" index-file)
+                           (log/info "Loaded" (count index) "images from index file" index-file)
                            index)
     (.exists broker-storage-file) (let [index (idx/reconstruct-index broker-storage-file)]
-                                    (println "Reconstructed index with" (count index) "images from storage file" broker-storage-file)
+                                    (log/info "Reconstructed index with" (count index) "images from storage file" broker-storage-file)
                                     index)
     :else (do
-            (println "Starting with empty index")
+            (log/info "Starting with empty index")
             {})))
 
 (defn start []
@@ -30,13 +31,13 @@
         br (br/create-broker 1 :index index)]
     (dosync
       (ref-set broker br)))
-  (println "Started imagestash server"))
+  (log/info "Started imagestash server"))
 
 (defn stop []
-  (println "Saving index with" (count (:index @broker)) "images to file" index-file)
+  (log/info "Saving index with" (count (:index @broker)) "images to file" index-file)
   (idx/save-index index-file (:index @broker))
   (shutdown-agents)
-  (println "System shutdown completed"))
+  (log/info "System shutdown completed"))
 
 (defn resize-handler [source raw-size raw-format]
   (let [size (Integer/parseInt raw-size)

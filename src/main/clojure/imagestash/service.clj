@@ -54,20 +54,26 @@
                  "Content-Length" (str length)}
        :body    stream})))
 
-(defn resize-handler [source raw-size raw-format]
-  (let [size (Integer/parseInt raw-size)
-        format (if raw-format
-                 (fmt/parse-format raw-format)
-                 :jpeg)
-        image-source (br/from-internet-source source size :format format)]
+(defn resize-handler [{:keys [source size format]}]
+  (let [image-source (br/from-internet-source source size :format format)]
     (let [br (br/add-image @broker image-source)
           image (br/get-image br image-source)]
       (dosync
         (ref-set broker br))
       (RenderableImage. image))))
 
+(defn- parse-args [source size format]
+  {:pre [source
+         size]}
+  {:source source
+   :size (Integer/parseInt size)
+   :format (if format
+             (fmt/parse-format format)
+             :jpeg)})
+
 (defroutes resize-routes
-  (GET "/resize" [source size format] (resize-handler source size format)))
+  (GET "/resize" [source size format]
+       (resize-handler (parse-args source size format))))
 
 (def app
   (handler/site (rmd/wrap-defaults resize-routes rmd/api-defaults)))

@@ -6,6 +6,7 @@
             [imagestash.io :as io]
             [compojure.core :refer :all]
             [compojure.handler :as handler]
+            [compojure.response :as response]
             [ring.middleware.defaults :as rmd]
             [clojure.tools.logging :as log]))
 
@@ -43,6 +44,16 @@
   (shutdown-agents)
   (log/info "System shutdown completed"))
 
+(deftype RenderableImage [image]
+  response/Renderable
+  (render [this request]
+    (let [length (alength (:data image))
+          stream (ByteArrayInputStream. (:data image))]
+      {:status  200
+       :headers {"Content-Type"   (fmt/format-mime-type (:format image))
+                 "Content-Length" (str length)}
+       :body    stream})))
+
 (defn resize-handler [source raw-size raw-format]
   (let [size (Integer/parseInt raw-size)
         format (if raw-format
@@ -50,15 +61,10 @@
                  :jpeg)
         image-source (br/from-internet-source source size :format format)]
     (let [br (br/add-image @broker image-source)
-          image (br/get-image br image-source)
-          length (alength (:data image))
-          stream (ByteArrayInputStream. (:data image))]
+          image (br/get-image br image-source)]
       (dosync
         (ref-set broker br))
-      {:status  200
-       :headers {"Content-Type"   (fmt/format-mime-type (:format image))
-                 "Content-Length" (str length)}
-       :body    stream})))
+      (RenderableImage. image))))
 
 (defroutes resize-routes
   (GET "/resize" [source size format] (resize-handler source size format)))

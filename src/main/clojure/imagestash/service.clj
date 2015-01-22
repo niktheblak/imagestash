@@ -20,11 +20,11 @@
   (cond
     (io/file-exists? index-file)
       (let [index (idx/load-index index-file)]
-        (log/info "Loaded" (count index) "images from index file" index-file)
+        (log/info "Loaded" (count index) "images from index file" (.getAbsolutePath index-file))
         index)
     (io/file-exists? broker-storage-file)
       (let [index (idx/reconstruct-index broker-storage-file)]
-        (log/info "Reconstructed index with" (count index) "images from storage file" broker-storage-file)
+        (log/info "Reconstructed index with" (count index) "images from storage file" (.getAbsolutePath broker-storage-file))
         index)
     :else
       (do
@@ -34,12 +34,13 @@
 (defn start []
   (let [index (load-index)
         br (br/create-broker 1 :index index)]
+    (log/info "Created image broker" (:broker-id br) "using storage file" (.getAbsolutePath (:storage br)))
     (dosync
       (ref-set broker br)))
   (log/info "Started imagestash server"))
 
 (defn stop []
-  (log/info "Saving index with" (count (:index @broker)) "images to file" index-file)
+  (log/info "Saving index with" (count (:index @broker)) "images to file" (.getAbsolutePath index-file))
   (idx/save-index index-file (:index @broker))
   (shutdown-agents)
   (log/info "System shutdown completed"))

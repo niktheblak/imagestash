@@ -1,11 +1,17 @@
 (ns imagestash.io
-  (:import [java.io InputStream DataInput]
+  (:import [java.io InputStream DataInput File]
            [java.util Arrays]
            [java.nio.charset Charset]
            [java.nio ByteBuffer]
            [java.nio.channels FileChannel]))
 
 (def default-charset (Charset/forName "UTF-8"))
+
+(defn file-exists? [^File file]
+  (and
+    (.exists file)
+    (.canRead file)
+    (> (.length file) 0)))
 
 (defn byte-array? [arr]
   (let [c (class arr)]

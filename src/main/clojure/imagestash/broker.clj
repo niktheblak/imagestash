@@ -39,27 +39,27 @@
    :storage (storage-file id)
    :index index})
 
-(defn- get-image [{:keys [index storage]} {:keys [key size format]}]
+(defn contains-image? [broker {:keys [key size format]}]
+  (let [index-key (index/->IndexKey key size format)]
+    (get (:index broker) index-key)))
+
+(defn get-image [{:keys [index storage]} {:keys [key size format]}]
   (let [index-key (index/->IndexKey key size format)]
     (if-let [image-pointer (get index index-key)]
       (snio/read-image-from-file storage (:offset image-pointer) (:size image-pointer))
       nil)))
 
-(defn get-or-add-image [broker {:keys [key size format source] :as image}]
+(defn add-image [broker {:keys [key size format source] :as image}]
   {:pre [(:source image)
          (string? key)
          (pos? size)
-         (format/supported-format? format)]
-   :post [(:data %)]}
-  (if-let [cached-image (get-image broker image)]
-    cached-image
+         (format/supported-format? format)]}
+  (if (contains-image? broker image)
+    broker
     (let [storage (:storage broker)
           index-key (index/->IndexKey key size format)
           resized-image-data (resize/resize-image source size format)
           resized-image (assoc image :data resized-image-data)
           stored-image (snio/write-image-to-file storage resized-image)
           index-value (index/->IndexValue (:offset stored-image) (:size stored-image))]
-      (assoc resized-image
-             :added true
-             :index-key index-key
-             :index-value index-value))))
+      (assoc-in broker [:index index-key] index-value))))

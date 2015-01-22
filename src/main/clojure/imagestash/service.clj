@@ -3,6 +3,7 @@
   (:require [imagestash.broker :as br]
             [imagestash.format :as fmt]
             [imagestash.index :as idx]
+            [imagestash.io :as io]
             [compojure.core :refer :all]
             [compojure.handler :as handler]
             [ring.middleware.defaults :as rmd]
@@ -16,15 +17,18 @@
 
 (defn load-index []
   (cond
-    (.exists index-file) (let [index (idx/load-index index-file)]
-                           (log/info "Loaded" (count index) "images from index file" index-file)
-                           index)
-    (.exists broker-storage-file) (let [index (idx/reconstruct-index broker-storage-file)]
-                                    (log/info "Reconstructed index with" (count index) "images from storage file" broker-storage-file)
-                                    index)
-    :else (do
-            (log/info "Starting with empty index")
-            {})))
+    (io/file-exists? index-file)
+      (let [index (idx/load-index index-file)]
+        (log/info "Loaded" (count index) "images from index file" index-file)
+        index)
+    (io/file-exists? broker-storage-file)
+      (let [index (idx/reconstruct-index broker-storage-file)]
+        (log/info "Reconstructed index with" (count index) "images from storage file" broker-storage-file)
+        index)
+    :else
+      (do
+        (log/info "Starting with empty index")
+        {})))
 
 (defn start []
   (let [index (load-index)
@@ -45,14 +49,12 @@
                  (fmt/parse-format raw-format)
                  :jpeg)
         image-source (br/from-internet-source source size :format format)]
-    (let [image (br/get-or-add-image @broker image-source)
+    (let [br (br/add-image @broker image-source)
+          image (br/get-image br image-source)
           length (alength (:data image))
           stream (ByteArrayInputStream. (:data image))]
-      (when (:added image)
-        (let [index-key (:index-key image)
-              index-value (:index-value image)]
-          (dosync
-            (alter broker assoc-in [:index index-key] index-value))))
+      (dosync
+        (ref-set broker br))
       {:status  200
        :headers {"Content-Type"   (fmt/format-mime-type (:format image))
                  "Content-Length" (str length)}

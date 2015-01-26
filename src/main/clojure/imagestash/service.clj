@@ -1,5 +1,6 @@
 (ns imagestash.service
-  (:import [java.io ByteArrayInputStream File])
+  (:import [java.io ByteArrayInputStream File]
+           [java.net URL MalformedURLException])
   (:require [imagestash.broker :as br]
             [imagestash.format :as fmt]
             [imagestash.index :as idx]
@@ -65,18 +66,35 @@
                  "Location"       (get-location image)}
        :body    stream})))
 
-(defn resize-handler [{:keys [key source size format]}]
-  (let [image-source (if key
-                       (br/from-local-source key size :format format)
-                       (br/from-internet-source source size :format format))]
-    (let [br (if key
-               @broker
-               (br/add-image @broker image-source))
-          image (br/get-image br image-source)]
-      (reset! broker br)
-      (if image
-        (RenderableImage. image)
-        (resp/not-found (str "Image with key " key " not found"))))))
+(defn is-url? [url]
+  (if (and
+        (string? url)
+        (not (.isEmpty url)))
+    (try
+      (URL. url)
+      true
+      (catch MalformedURLException e false))
+  false))
+
+(defn- fetch-from-remote-source [{:keys [source size format]}]
+  {:pre [(is-url? source)]}
+  (let [image-source (br/from-internet-source source size :format format)
+        br (br/add-image @broker image-source)]
+    (reset! broker br)
+    (br/get-image br image-source)))
+
+(defn- fetch-from-local-source [{:keys [key size format]}]
+  {:pre [(string? key)]}
+  (let [image-source (br/from-local-source key size :format format)]
+    (br/get-image @broker image-source)))
+
+(defn resize-handler [request]
+  (let [image (if (:key request)
+                (fetch-from-local-source request)
+                (fetch-from-remote-source request))]
+    (if image
+      (RenderableImage. image)
+      (resp/not-found (str "Image with key " key " not found")))))
 
 (defn- parse-args [key source size format]
   {:pre [(or key source)

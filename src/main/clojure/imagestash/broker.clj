@@ -20,7 +20,8 @@
     :else (throw (ex-info "Unsupported source" {:source source}))))
 
 (defn from-internet-source [source size & {:keys [format] :or {format :jpeg}}]
-  {:pre [(number? size)
+  {:pre [source
+         (number? size)
          (format/supported-format? format)]
    :post [(:key %)
           (:size %)
@@ -30,6 +31,17 @@
    :size   size
    :format format
    :source (to-url source)})
+
+(defn from-local-source [key size & {:keys [format] :or {format :jpeg}}]
+  {:pre [(string? key)
+         (number? size)
+         (format/supported-format? format)]
+   :post [(:key %)
+          (:size %)
+          (:format %)]}
+  {:key    key
+   :size   size
+   :format format})
 
 (defn storage-file [id]
   (File. (str "broker-" id ".bin")))
@@ -50,7 +62,7 @@
       nil)))
 
 (defn add-image [broker {:keys [key size format source] :as image}]
-  {:pre [(:source image)
+  {:pre [source
          (string? key)
          (pos? size)
          (format/supported-format? format)]}

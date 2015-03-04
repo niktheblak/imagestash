@@ -89,12 +89,11 @@
     (br/get-image @broker image-source)))
 
 (defn resize-handler [request]
-  (let [image (if (:key request)
-                (fetch-from-local-source request)
-                (fetch-from-remote-source request))]
-    (if image
-      (RenderableImage. image)
-      (resp/not-found (str "Image with key " key " not found")))))
+  (if-let [image (if (:key request)
+                   (fetch-from-local-source request)
+                   (fetch-from-remote-source request))]
+    (RenderableImage. image)
+    (resp/not-found (str "Image with key " key " not found"))))
 
 (defn require-param [condition param-name]
   (when-not condition

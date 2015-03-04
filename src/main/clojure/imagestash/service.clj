@@ -96,19 +96,35 @@
       (RenderableImage. image)
       (resp/not-found (str "Image with key " key " not found")))))
 
+(defn require-param [condition param-name]
+  (when-not condition
+    (throw (IllegalArgumentException. (str "Parameter " param-name " must be specified")))))
+
 (defn- parse-args [key source size format]
-  {:pre [(or key source)
-         size]}
-  {:key key
-   :source source
-   :size (Integer/parseInt size)
-   :format (if format
-             (fmt/parse-format format)
-             :jpeg)})
+  (try
+    (require-param (or key source) "key or source")
+    (require-param size "size")
+    {:key key
+     :source source
+     :size (Integer/parseInt size)
+     :format (if format
+               (fmt/parse-format format)
+               :jpeg)}
+    (catch IllegalArgumentException e {:error (.getMessage e)})
+    (catch NumberFormatException e {:error (.getMessage e)})))
+
+(defn bad-request [& message]
+  {:status  400
+   :headers {"Content-Type" "text/plain"}
+   :body    message})
 
 (defroutes resize-routes
-  (GET "/resize" [key source size format]
-       (resize-handler (parse-args key source size format))))
+           (GET "/resize" [key source size format]
+                (let [args (parse-args key source size format)
+                      error (:error args)]
+                  (if error
+                    (bad-request error)
+                    (resize-handler args)))))
 
 (def app
   (handler/site (rmd/wrap-defaults resize-routes rmd/api-defaults)))

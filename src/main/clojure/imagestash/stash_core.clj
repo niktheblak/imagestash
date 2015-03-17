@@ -35,10 +35,11 @@
                      :or   {flags 0}}]
   (let [len (+ (alength header-bytes)                       ; header length
                1                                            ; flags
-               4                                            ; key length
+               2                                            ; key length
                (alength (.getBytes key charset))            ; key data
-               4                                            ; image size
+               2                                            ; image size
                1                                            ; format
+               4                                            ; image data length
                (alength data)                               ; image data
                d/digest-length                              ; digest length
                )]

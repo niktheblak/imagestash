@@ -66,5 +66,5 @@
           resized-image-data (resize/resize-image source size format)
           resized-image (assoc image :data resized-image-data)
           stored-image (snio/write-image-to-file storage resized-image)
-          index-value (index/->IndexValue (:offset stored-image) (:size stored-image))]
+          index-value (index/->IndexValue (:offset stored-image) (:stored-length stored-image))]
       (assoc-in broker [:index index-key] index-value))))

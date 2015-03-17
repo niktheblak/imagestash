@@ -39,7 +39,7 @@
         (is (Arrays/equals (:data test-image) (:data read-image)))
         (is (= (:storage-size stored-image) (:storage-size read-image)))))
     (testing "read should throw on invalid header"
-      (is (thrown-with-msg? RuntimeException #"Invalid header" (nio/read-image-from-file file 3 (- file-size 3)))))))
+      (is (thrown-with-msg? RuntimeException #"Invalid image preamble" (nio/read-image-from-file file 3 (- file-size 3)))))))
 
 (deftest size-on-disk-test
   (let [file (temp-file)]

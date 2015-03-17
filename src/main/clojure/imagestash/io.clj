@@ -1,5 +1,5 @@
 (ns imagestash.io
-  (:import [java.io InputStream DataInput File]
+  (:import [java.io InputStream File]
            [java.util Arrays]
            [java.nio.charset Charset]
            [java.nio ByteBuffer]
@@ -44,36 +44,22 @@
           (recur buf (inc pos)))
         (Arrays/copyOfRange buf 0 pos)))))
 
-(defn read-byte [^DataInput input]
-  (.readByte input))
-
-(defn read-short [^DataInput input]
-  (.readUnsignedShort input))
-
-(defn read-int [^DataInput input]
-  (.readInt input))
-
-(defn read-bytes [n ^DataInput input]
-  (let [buf (byte-array n)]
-    (.readFully input buf)
-    buf))
-
-(defn read-bytes-from-buffer [^ByteBuffer buffer n]
-  {:pre [(>= (.remaining buffer) n)]
-   :post [(= (alength %) n)]}
-  (let [data (byte-array n)]
+(defn read-bytes-from-buffer [^ByteBuffer buffer amount]
+  {:pre [(>= (.remaining buffer) amount)]
+   :post [(= (alength %) amount)]}
+  (let [data (byte-array amount)]
     (.get buffer data)
     data))
 
-(defn skip-buffer [^ByteBuffer buffer n]
-  {:pre [(>= (.remaining buffer) n)]}
-  (.position buffer (+ (.position buffer) n)))
+(defn skip-buffer [^ByteBuffer buffer amount]
+  {:pre [(>= (.remaining buffer) amount)]}
+  (.position buffer (+ (.position buffer) amount)))
 
-(defn read-from-channel [^FileChannel channel position size]
-  {:pre [(>= (.size channel) (+ position size))]
-   :post [(= (.remaining %) size)]}
-  (let [buffer (ByteBuffer/allocate size)
+(defn read-from-channel [^FileChannel channel position amount]
+  {:pre [(>= (.size channel) (+ position amount))]
+   :post [(= (.remaining %) amount)]}
+  (let [buffer (ByteBuffer/allocate amount)
         bytes-read (.read channel buffer position)]
-    (assert (= bytes-read size) "Could not read requested amount of bytes")
+    (assert (= bytes-read amount) "Could not read requested amount of bytes")
     (.rewind buffer)
     buffer))

@@ -43,29 +43,22 @@
      1        ; format
      4))      ; image data length
 
-(defn stored-image-size [{:keys [key-length data-length]}]
-  {:pre [(pos? key-length)
-         (pos? data-length)]}
-  (let [len (+ header-bytes-length ; header length
+(defn stored-image-size [{:keys [key data key-length data-length]}]
+  {:pre [(or key (pos? key-length))
+         (or data (pos? data-length))]}
+  (let [key-len (if key-length
+                  key-length
+                  (alength (.getBytes key charset)))
+        data-len (if data-length
+                   data-length
+                   (alength data))
+        len (+ header-bytes-length ; header length
                1                   ; flags
                2                   ; key length
-               key-length          ; key data
+               key-len             ; key data
                2                   ; image size
                1                   ; format
                4                   ; image data length
-               data-length         ; image data
+               data-len            ; image data
                d/digest-length)]   ; digest length
-    (+ len (padding-length len))))
-
-(defn size-on-disk [{:keys [key data]}]
-  (let [len (+ header-bytes-length                          ; header length
-               1                                            ; flags
-               2                                            ; key length
-               (alength (.getBytes key charset))            ; key data
-               2                                            ; image size
-               1                                            ; format
-               4                                            ; image data length
-               (alength data)                               ; image data
-               d/digest-length                              ; digest length
-               )]
     (+ len (padding-length len))))

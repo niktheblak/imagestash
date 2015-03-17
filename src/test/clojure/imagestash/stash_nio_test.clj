@@ -44,7 +44,7 @@
 (deftest size-on-disk-test
   (let [file (temp-file)]
     (testing "size-on-disk"
-      (let [expected-size (stash/size-on-disk test-image)
+      (let [expected-size (stash/stored-image-size test-image)
             {:keys [size]} (nio/write-image-to-file file test-image)
             file-size (.length file)
             read-image (nio/read-image-from-file file 0 file-size)]

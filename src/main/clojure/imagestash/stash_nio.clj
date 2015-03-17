@@ -60,7 +60,7 @@
   (with-open [channel (FileChannels/append target)]
     (assert (= (.size channel) (.position channel)) "Channel is not opened at file end")
     (let [original-length (.size channel)
-          size (size-on-disk image)
+          size (stored-image-size image)
           buffer (ByteBuffer/allocate size)
           written-image (write-image-to-buffer buffer image)]
       (assert (= size (:size written-image)))

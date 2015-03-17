@@ -7,6 +7,8 @@
 
 (def header-bytes (.getBytes "IMG1" charset))
 
+(def header-bytes-length (alength header-bytes))
+
 (def format-codes {:jpeg 0
                    :png  1
                    :gif  2})
@@ -31,9 +33,32 @@
                          (- 8 offset))]
     padding-length))
 
-(defn size-on-disk [{:keys [flags key data]
-                     :or   {flags 0}}]
-  (let [len (+ (alength header-bytes)                       ; header length
+(def up-to-key-length (+ header-bytes-length  ; header length
+                         1                    ; flags
+                         2))                  ; key length
+
+(defn up-to-data-length [key-len]
+  (+ key-len  ; key length
+     2        ; image size
+     1        ; format
+     4))      ; image data length
+
+(defn stored-image-size [{:keys [key-length data-length]}]
+  {:pre [(pos? key-length)
+         (pos? data-length)]}
+  (let [len (+ header-bytes-length ; header length
+               1                   ; flags
+               2                   ; key length
+               key-length          ; key data
+               2                   ; image size
+               1                   ; format
+               4                   ; image data length
+               data-length         ; image data
+               d/digest-length)]   ; digest length
+    (+ len (padding-length len))))
+
+(defn size-on-disk [{:keys [key data]}]
+  (let [len (+ header-bytes-length                          ; header length
                1                                            ; flags
                2                                            ; key length
                (alength (.getBytes key charset))            ; key data

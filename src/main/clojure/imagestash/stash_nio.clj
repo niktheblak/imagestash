@@ -70,7 +70,7 @@
       (assoc written-image :offset original-length))))
 
 (defn- read-header-from-buffer [^ByteBuffer buffer digest]
-  (let [header-on-disk (io/read-bytes-from-buffer buffer (alength header-bytes))]
+  (let [header-on-disk (io/read-bytes-from-buffer buffer header-bytes-length)]
     (when-not (Arrays/equals header-bytes header-on-disk)
       (throw (ex-info "Invalid header" {:header header-on-disk})))
     (let [flags (.get buffer)
@@ -87,6 +87,34 @@
        :size        image-size
        :format      image-format
        :data-length data-len})))
+
+(defn- read-key-len [^FileChannel channel position]
+  (let [buffer (io/read-from-channel channel position up-to-key-length)
+        header-on-disk (io/read-bytes-from-buffer buffer header-bytes-length)
+        flags (.get buffer)
+        key-len (.getShort buffer)]
+    (when-not (Arrays/equals header-bytes header-on-disk)
+      (throw (ex-info "Invalid header" {:header header-on-disk})))
+    {:flags      flags
+     :key-length key-len}))
+
+(defn read-header-from-channel [^FileChannel channel position]
+  (let [{:keys [flags key-length]} (read-key-len channel position)
+        at-key-data (+ position up-to-key-length)
+        amount-to-read (up-to-data-length key-length)
+        buffer (io/read-from-channel channel at-key-data amount-to-read)
+        key-buf (io/read-bytes-from-buffer buffer key-length)
+        image-key (String. key-buf charset)
+        image-size (.getShort buffer)
+        format-code (.get buffer)
+        image-format (code-to-format format-code)
+        data-len (.getInt buffer)]
+    {:flags       flags
+     :key-length  key-length
+     :key         image-key
+     :size        image-size
+     :format      image-format
+     :data-length data-len}))
 
 (defn read-image-from-buffer [^ByteBuffer buffer]
   (let [digest (d/new-digest)
@@ -110,6 +138,12 @@
   {:pre [(pos? size)
          (>= (.size channel) (+ position size))]}
   (let [buffer (io/read-from-channel channel position size)]
+    (read-image-from-buffer buffer)))
+
+(defn read-image-from-channel-without-size [^FileChannel channel position]
+  (let [header (read-header-from-channel channel position)
+        size-on-disk (stored-image-size header)
+        buffer (io/read-from-channel channel position size-on-disk)]
     (read-image-from-buffer buffer)))
 
 (defn read-image-from-file [source position size]

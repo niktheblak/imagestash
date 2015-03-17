@@ -1,8 +1,9 @@
 (ns imagestash.index
-  (:import [java.io RandomAccessFile DataOutputStream DataInputStream]
-           [clojure.lang Keyword])
+  (:import [java.io DataOutputStream DataInputStream]
+           [clojure.lang Keyword]
+           [imagestash.j FileChannels])
   (:require [imagestash.stash-core :as stash]
-            [imagestash.stash-io :as sio]
+            [imagestash.stash-nio :as nio]
             [clojure.java.io :as jio]))
 
 (defrecord IndexKey [^String key ^Long size ^Keyword format])
@@ -44,15 +45,14 @@
       @index)))
 
 (defn reconstruct-index [source]
-  (with-open [ra-file (RandomAccessFile. source "r")]
-    (loop [bytes-read 0
+  (with-open [channel (FileChannels/read source)]
+    (loop [position 0
            images {}]
-      (let [current-offset (.getFilePointer ra-file)
-            image (sio/read-image-from-file ra-file)
-            new-bytes-read (+ bytes-read (:stored-length image))
+      (let [image (nio/read-image-from-channel-without-size channel position)
+            new-bytes-read (+ position (:stored-length image))
             index-key (IndexKey. (:key image) (:size image) (:format image))
-            value (IndexValue. current-offset (:stored-length image))
+            value (IndexValue. position (:stored-length image))
             new-images (assoc images index-key value)]
-        (if (< new-bytes-read (.length ra-file))
+        (if (< new-bytes-read (.size channel))
           (recur new-bytes-read new-images)
           new-images)))))

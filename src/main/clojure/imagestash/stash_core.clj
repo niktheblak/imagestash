@@ -5,11 +5,11 @@
 
 (def charset (Charset/forName "US-ASCII"))
 
-(def header-bytes (.getBytes "IMG1" charset))
+(def preamble-bytes (.getBytes "IMG1" charset))
 
-(def header-bytes-length (alength header-bytes))
+(def preamble-size (alength preamble-bytes))
 
-(def header-length (+ header-bytes-length ; preamble
+(def header-size (+ preamble-size         ; preamble
                       1                   ; flags
                       2                   ; image resolution
                       1                   ; image format
@@ -31,18 +31,15 @@
   {:post [%]}
   (get code-formats format-code))
 
-(defn padding-length [position]
+(defn padding-amount [position]
   {:pre [(>= position 0)]
    :post [(>= % 0)
           (<= % 8)]}
   (let [offset (mod position 8)
-        padding-length (if (= 0 offset)
+        padding (if (= 0 offset)
                          0
                          (- 8 offset))]
-    padding-length))
-
-(defn with-padding [n]
-  (+ n (padding-length n)))
+    padding))
 
 ; Stored image structure is:
 ;
@@ -75,7 +72,7 @@
         data-len (if data-length
                    data-length
                    (alength data))
-        len (+ header-bytes-length ; header length
+        len (+ preamble-size ; header length
                1                   ; flags
                2                   ; key length
                key-len             ; key data
@@ -84,4 +81,4 @@
                4                   ; image data length
                data-len            ; image data
                d/digest-length)]   ; digest data
-    (+ len (padding-length len))))
+    (+ len (padding-amount len))))

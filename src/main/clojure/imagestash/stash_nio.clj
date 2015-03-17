@@ -10,7 +10,7 @@
 
 (defn- write-padding-buffer [^ByteBuffer buffer]
   (let [pos (.position buffer)
-        len (padding-length pos)]
+        len (padding-amount pos)]
     (dotimes [_ len]
       (.put buffer (byte 0)))))
 
@@ -21,7 +21,7 @@
          (pos? size)]}
   (let [format-code (format-to-code (format/parse-format format))]
     (doto buffer
-      (.put header-bytes)
+      (.put preamble-bytes)
       (.put (unchecked-byte flags))
       (.putShort (short size))
       (.put (byte format-code))
@@ -35,7 +35,7 @@
          (pos? size)]}
   (let [format-code (format-to-code (format/parse-format format))]
     (d/update-digest digest
-                     header-bytes
+                     preamble-bytes
                      flags
                      key-length
                      size
@@ -82,9 +82,9 @@
       (assoc written-image :offset original-length))))
 
 (defn- read-header-from-buffer [^ByteBuffer buffer]
-  (let [header-on-disk (io/read-bytes-from-buffer buffer header-bytes-length)]
-    (when-not (Arrays/equals header-bytes header-on-disk)
-      (throw (ex-info "Invalid header" {:header header-on-disk})))
+  (let [stored-preamble (io/read-bytes-from-buffer buffer preamble-size)]
+    (when-not (Arrays/equals preamble-bytes stored-preamble)
+      (throw (ex-info "Invalid image preamble" {:header stored-preamble})))
     (let [flags (.get buffer)
           image-size (.getShort buffer)
           format-code (.get buffer)
@@ -107,7 +107,7 @@
         key-bytes (io/read-bytes-from-buffer buffer (:key-length header))
         image-key (String. key-bytes charset)
         image-data (io/read-bytes-from-buffer buffer (:data-length header))
-        padding-len (padding-length (.position buffer))
+        padding-len (padding-amount (.position buffer))
         _ (io/skip-buffer buffer padding-len)
         storage-size (- (.position buffer) original-pos)
         _ (d/update-digest digest key-bytes image-data)
@@ -128,19 +128,19 @@
 
 (defn read-image-from-channel-without-size [^FileChannel channel position]
   (let [digest (d/new-digest)
-        header-buffer (io/read-from-channel channel position header-length)
+        header-buffer (io/read-from-channel channel position header-size)
         header (read-header-from-buffer header-buffer)
         _ (update-digest-with-header digest header)
-        pad-amount (padding-length (+ header-length (:key-length header) (:data-length header)))
+        pad-amount (padding-amount (+ header-size (:key-length header) (:data-length header)))
         payload-size (+ (:key-length header) (:data-length header) pad-amount)
-        payload-buffer (io/read-from-channel channel (+ position header-length) payload-size)
+        payload-buffer (io/read-from-channel channel (+ position header-size) payload-size)
         key-bytes (io/read-bytes-from-buffer payload-buffer (:key-length header))
         image-key (String. key-bytes charset)
         image-data (io/read-bytes-from-buffer payload-buffer (:data-length header))
         _ (d/update-digest digest key-bytes image-data)
         checksum (:checksum header)
         expected-checksum (d/get-digest digest)
-        storage-size (+ header-length payload-size)]
+        storage-size (+ header-size payload-size)]
     (when-not (Arrays/equals expected-checksum checksum)
       (throw (ex-info "Image checksum does not match" {:key key})))
     (assoc header

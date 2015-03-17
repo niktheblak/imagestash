@@ -1,10 +1,10 @@
 (ns imagestash.service
-  (:import [java.io ByteArrayInputStream File]
-           [java.net URL MalformedURLException])
+  (:import [java.io ByteArrayInputStream File])
   (:require [imagestash.broker :as br]
             [imagestash.format :as fmt]
             [imagestash.index :as idx]
             [imagestash.io :as io]
+            [imagestash.url :as url]
             [compojure.core :refer :all]
             [compojure.handler :as handler]
             [ring.util.response :as resp]
@@ -66,18 +66,8 @@
                  "Location"       (get-location image)}
        :body    stream})))
 
-(defn is-url? [url]
-  (if (and
-        (string? url)
-        (not (.isEmpty url)))
-    (try
-      (URL. url)
-      true
-      (catch MalformedURLException e false))
-  false))
-
 (defn- fetch-from-remote-source [{:keys [source size format]}]
-  {:pre [(is-url? source)]}
+  {:pre [(url/url? source)]}
   (let [image-source (br/from-internet-source source size :format format)
         br (br/add-image @broker image-source)]
     (reset! broker br)

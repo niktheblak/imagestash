@@ -1,23 +1,16 @@
 (ns imagestash.broker
   (:import [java.io File]
-           [imagestash.j Base58]
-           [java.net URL URI])
+           [imagestash.j Base58])
   (:require [imagestash.digest :as d]
             [imagestash.stash-nio :as snio]
             [imagestash.index :as index]
             [imagestash.resize :as resize]
-            [imagestash.format :as format]))
+            [imagestash.format :as format]
+            [imagestash.url :as url]))
 
 (defn get-key [source size format]
   (let [digest (d/digest source size format)]
     (Base58/encode digest)))
-
-(defn- to-url [source]
-  (cond
-    (instance? URL source) source
-    (instance? URI source) (.toURL source)
-    (string? source) (URL. source)
-    :else (throw (ex-info "Unsupported source" {:source source}))))
 
 (defn from-internet-source [source size & {:keys [format] :or {format :jpeg}}]
   {:pre [source
@@ -30,7 +23,7 @@
   {:key    (get-key (str source) size (str format))
    :size   size
    :format format
-   :source (to-url source)})
+   :source (url/to-url source)})
 
 (defn from-local-source [key size & {:keys [format] :or {format :jpeg}}]
   {:pre [(string? key)

@@ -60,8 +60,8 @@
       (.put image-data)
       (write-padding-buffer))
     (let [storage-size (- (.position buffer) original-position)]
-      {:stored-length storage-size
-       :checksum      (d/get-digest digest)})))
+      {:storage-size storage-size
+       :checksum     (d/get-digest digest)})))
 
 (defn write-image-to-file [target {:keys [flags key size format data]
                                    :or   {flags 0} :as image}]
@@ -75,7 +75,7 @@
           size (stored-image-size image)
           buffer (ByteBuffer/allocate size)
           written-image (write-image-to-buffer buffer image)]
-      (assert (= size (:stored-length written-image)))
+      (assert (= size (:storage-size written-image)))
       (assert (= 0 (.remaining buffer)))
       (.rewind buffer)
       (.write channel buffer original-length)
@@ -109,7 +109,7 @@
         image-data (io/read-bytes-from-buffer buffer (:data-length header))
         padding-len (padding-length (.position buffer))
         _ (io/skip-buffer buffer padding-len)
-        stored-len (- (.position buffer) original-pos)
+        storage-size (- (.position buffer) original-pos)
         _ (d/update-digest digest key-bytes image-data)
         checksum (:checksum header)
         expected-checksum (d/get-digest digest)]
@@ -118,7 +118,7 @@
     (assoc header
            :key image-key
            :data image-data
-           :stored-length stored-len)))
+           :storage-size storage-size)))
 
 (defn read-image-from-channel [^FileChannel channel position size]
   {:pre [(pos? size)
@@ -140,13 +140,13 @@
         _ (d/update-digest digest key-bytes image-data)
         checksum (:checksum header)
         expected-checksum (d/get-digest digest)
-        stored-len (+ header-length payload-size)]
+        storage-size (+ header-length payload-size)]
     (when-not (Arrays/equals expected-checksum checksum)
       (throw (ex-info "Image checksum does not match" {:key key})))
     (assoc header
       :key image-key
       :data image-data
-      :stored-length stored-len)))
+      :storage-size storage-size)))
 
 (defn read-image-from-file [source position size]
   {:pre [(pos? size)]}

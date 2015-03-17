@@ -49,9 +49,9 @@
     (loop [position 0
            images {}]
       (let [image (nio/read-image-from-channel-without-size channel position)
-            new-position (+ position (:stored-length image))
+            new-position (+ position (:storage-size image))
             index-key (IndexKey. (:key image) (:size image) (:format image))
-            value (IndexValue. position (:stored-length image))
+            value (IndexValue. position (:storage-size image))
             new-images (assoc images index-key value)]
         (if (< new-position (.size channel))
           (recur new-position new-images)

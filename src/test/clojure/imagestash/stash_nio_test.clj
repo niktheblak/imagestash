@@ -16,15 +16,15 @@
 (deftest write-test
   (let [file (temp-file)]
     (testing "write to an empty file"
-      (let [{:keys [size]} (nio/write-image-to-file file test-image)
+      (let [{:keys [storage-size]} (nio/write-image-to-file file test-image)
             file-len (.length file)]
-        (is (divisible-by-eight size))
-        (is (= 168 size))
-        (is (= size file-len))))
+        (is (divisible-by-eight storage-size))
+        (is (= 168 storage-size))
+        (is (= storage-size file-len))))
     (testing "append to a non-empty file"
       (let [stored-image (nio/write-image-to-file file (assoc test-image :key "test-key-2"))
             file-len (.length file)]
-        (is (= 168 (:size stored-image)))
+        (is (= 168 (:storage-size stored-image)))
         (is (= 336 file-len))))))
 
 (deftest read-test
@@ -37,17 +37,17 @@
         (is (= 1024 (:size read-image)))
         (is (= :jpeg (:format read-image)))
         (is (Arrays/equals (:data test-image) (:data read-image)))
-        (is (= (:size stored-image) (:stored-length read-image)))))
+        (is (= (:storage-size stored-image) (:storage-size read-image)))))
     (testing "read should throw on invalid header"
-      (is (thrown-with-msg? RuntimeException #"Invalid header" (nio/read-image-from-file file 3 (- file-size 3)))))))
+      (is (thrown-with-msg? RuntimeException #"Invalid image preamble" (nio/read-image-from-file file 3 (- file-size 3)))))))
 
 (deftest size-on-disk-test
   (let [file (temp-file)]
     (testing "size-on-disk"
       (let [expected-size (stash/stored-image-size test-image)
-            {:keys [size]} (nio/write-image-to-file file test-image)
+            {:keys [storage-size]} (nio/write-image-to-file file test-image)
             file-size (.length file)
             read-image (nio/read-image-from-file file 0 file-size)]
-        (is (= expected-size size))
+        (is (= expected-size storage-size))
         (is (= expected-size file-size))
-        (is (= expected-size (:stored-length read-image)))))))
+        (is (= expected-size (:storage-size read-image)))))))

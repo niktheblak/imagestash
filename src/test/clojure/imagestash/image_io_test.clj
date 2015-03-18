@@ -2,7 +2,7 @@
   (:import [java.util Arrays])
   (:require [clojure.test :refer :all]
             [imagestash.test-utils :refer :all]
-            [imagestash.stash-core :as stash]
+            [imagestash.image-core :as core]
             [imagestash.image-io :as nio]))
 
 (defn- divisible-by-eight [n]
@@ -44,7 +44,7 @@
 (deftest size-on-disk-test
   (let [file (temp-file)]
     (testing "size-on-disk"
-      (let [expected-size (stash/stored-image-size test-image)
+      (let [expected-size (core/stored-image-size test-image)
             {:keys [storage-size]} (nio/write-image-to-file file test-image)
             file-size (.length file)
             read-image (nio/read-image-from-file file 0 file-size)]

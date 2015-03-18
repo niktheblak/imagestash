@@ -1,4 +1,4 @@
-(ns imagestash.stash-core
+(ns imagestash.image-core
   (:import [java.nio.charset Charset])
   (:require [clojure.set :as set]
             [imagestash.digest :as d]))

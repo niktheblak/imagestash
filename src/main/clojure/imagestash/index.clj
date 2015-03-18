@@ -2,7 +2,7 @@
   (:import [java.io DataOutputStream DataInputStream]
            [clojure.lang Keyword]
            [imagestash.j FileChannels])
-  (:require [imagestash.stash-core :as stash]
+  (:require [imagestash.image-core :as core]
             [imagestash.image-io :as iio]
             [clojure.java.io :as jio]))
 
@@ -14,7 +14,7 @@
   (let [key (.readUTF input)
         image-size (.readInt input)
         format-code (.readByte input)
-        format (stash/code-to-format format-code)
+        format (core/code-to-format format-code)
         offset (.readLong input)
         size (.readLong input)
         k (IndexKey. key image-size format)
@@ -25,7 +25,7 @@
   (doto output
     (.writeUTF (:key k))
     (.writeInt (int (:size k)))
-    (.write (stash/format-to-code (:format k)))
+    (.write (core/format-to-code (:format k)))
     (.writeLong (:offset v))
     (.writeLong (:size v))))
 

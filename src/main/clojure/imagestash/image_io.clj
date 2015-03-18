@@ -3,7 +3,7 @@
            [java.nio ByteBuffer]
            [java.nio.channels FileChannel]
            [imagestash.j FileChannels])
-  (:require [imagestash.stash-core :refer :all]
+  (:require [imagestash.image-core :refer :all]
             [imagestash.format :as format]
             [imagestash.digest :as d]
             [imagestash.io :as io]))

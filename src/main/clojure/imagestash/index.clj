@@ -37,22 +37,21 @@
 
 (defn load-index [source]
   (with-open [input (DataInputStream. (jio/input-stream source))]
-    (let [index (atom {})
-          amount (.readInt input)]
-      (dotimes [i amount]
-        (let [[k v] (read-index-item input)]
-          (swap! index assoc k v)))
-      @index)))
+    (let [amount (.readInt input)]
+      (loop [i 0
+             index (transient {})]
+        (if (< i amount)
+          (let [[k v] (read-index-item input)]
+            (recur (inc i) (assoc! index k v)))
+          (persistent! index))))))
 
 (defn reconstruct-index [source]
   (with-open [channel (FileChannels/read source)]
     (loop [position 0
-           images {}]
-      (let [image (nio/read-image-from-channel-without-size channel position)
-            new-position (+ position (:storage-size image))
-            index-key (IndexKey. (:key image) (:size image) (:format image))
-            value (IndexValue. position (:storage-size image))
-            new-images (assoc images index-key value)]
-        (if (< new-position (.size channel))
-          (recur new-position new-images)
-          new-images)))))
+           images (transient {})]
+      (if (< position (.size channel))
+        (let [image (nio/read-image-from-channel-without-size channel position)
+              k (IndexKey. (:key image) (:size image) (:format image))
+              v (IndexValue. position (:storage-size image))]
+          (recur (+ position (:storage-size image)) (assoc! images k v)))
+        (persistent! images)))))

@@ -1,5 +1,6 @@
 (ns imagestash.digest
-  (:import [java.security MessageDigest])
+  (:import [java.security MessageDigest]
+           [java.util Arrays])
   (:require [imagestash.io :as io]))
 
 (defn new-digest []
@@ -36,3 +37,10 @@
     (doseq [item items]
       (update-digest digest item))
     (.digest digest)))
+
+(defn verify-checksum [expected-checksum actual-checksum key]
+  {:pre [(io/byte-array? expected-checksum)
+         (io/byte-array? actual-checksum)
+         (= digest-length (alength expected-checksum) (alength actual-checksum))]}
+  (when-not (Arrays/equals expected-checksum actual-checksum)
+    (throw (ex-info "Checksum does not match" {:key key}))))

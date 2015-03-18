@@ -15,10 +15,12 @@
       (.put buffer (byte 0)))))
 
 (defn- write-header-to-buffer [^ByteBuffer buffer {:keys [flags key-length size format data-length]
-                                                   :or   {flags 0}}]
+                                                   :or   {flags 0}} checksum]
   {:pre [(pos? key-length)
          (pos? data-length)
-         (pos? size)]}
+         (pos? size)
+         (io/byte-array? checksum)
+         (= d/digest-length (alength checksum))]}
   (let [format-code (format-to-code (format/parse-format format))]
     (doto buffer
       (.put preamble-bytes)
@@ -26,7 +28,8 @@
       (.putShort (short size))
       (.put (byte format-code))
       (.putShort (short key-length))
-      (.putInt data-length))))
+      (.putInt data-length)
+      (.put checksum))))
 
 (defn- update-digest-with-header [digest {:keys [flags key-length size format data-length]
                                           :or   {flags 0}}]
@@ -37,9 +40,9 @@
     (d/update-digest digest
                      preamble-bytes
                      flags
-                     key-length
                      size
                      format-code
+                     key-length
                      data-length)))
 
 (defn- write-image-to-buffer [^ByteBuffer buffer image]
@@ -54,8 +57,7 @@
     (update-digest-with-header digest header)
     (d/update-digest digest key-bytes image-data)
     (doto buffer
-      (write-header-to-buffer header)
-      (.put (d/get-digest digest))
+      (write-header-to-buffer header (d/get-digest digest))
       (.put key-bytes)
       (.put image-data)
       (write-padding-buffer))
@@ -70,21 +72,24 @@
          (format/supported-format? format)
          (io/byte-array? data)]}
   (with-open [channel (FileChannels/append target)]
-    (assert (= (.size channel) (.position channel)) "Channel is not opened at file end")
-    (let [original-length (.size channel)
+    (assert (= (.size channel) (.position channel))
+            "Channel is not opened at file end")
+    (let [position (.position channel)
           size (stored-image-size image)
           buffer (ByteBuffer/allocate size)
           written-image (write-image-to-buffer buffer image)]
-      (assert (= size (:storage-size written-image)))
-      (assert (= 0 (.remaining buffer)))
+      (assert (= size (:storage-size written-image))
+              "Calculated image record size differs from actual record size")
+      (assert (= 0 (.remaining buffer))
+              "Less data was written to buffer as expected")
       (.rewind buffer)
-      (.write channel buffer original-length)
-      (assoc written-image :offset original-length))))
+      (.write channel buffer position)
+      (assoc written-image :offset position))))
 
 (defn- read-header-from-buffer [^ByteBuffer buffer]
   (let [stored-preamble (io/read-bytes-from-buffer buffer preamble-size)]
     (when-not (Arrays/equals preamble-bytes stored-preamble)
-      (throw (ex-info "Invalid image preamble" {:header stored-preamble})))
+      (throw (ex-info "Invalid image preamble" {:preamble stored-preamble})))
     (let [flags (.get buffer)
           image-size (.getShort buffer)
           format-code (.get buffer)
@@ -113,8 +118,7 @@
         _ (d/update-digest digest key-bytes image-data)
         checksum (:checksum header)
         expected-checksum (d/get-digest digest)]
-    (when-not (Arrays/equals expected-checksum checksum)
-      (throw (ex-info "Image checksum does not match" {:key key})))
+    (d/verify-checksum expected-checksum checksum key)
     (assoc header
            :key image-key
            :data image-data
@@ -122,7 +126,7 @@
 
 (defn read-image-from-channel [^FileChannel channel position size]
   {:pre [(pos? size)
-         (>= (.size channel) (+ position size))]}
+         (<= (+ position size) (.size channel))]}
   (let [buffer (io/read-from-channel channel position size)]
     (read-image-from-buffer buffer)))
 
@@ -141,8 +145,7 @@
         checksum (:checksum header)
         expected-checksum (d/get-digest digest)
         storage-size (+ header-size payload-size)]
-    (when-not (Arrays/equals expected-checksum checksum)
-      (throw (ex-info "Image checksum does not match" {:key key})))
+    (d/verify-checksum expected-checksum checksum key)
     (assoc header
       :key image-key
       :data image-data

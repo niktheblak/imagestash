@@ -8,7 +8,9 @@
 (defn get-digest [^MessageDigest digest]
   (.digest digest))
 
-(def digest-length (.getDigestLength (new-digest)))
+(def digest-length
+  "16 bytes for MD5"
+  (.getDigestLength (new-digest)))
 
 (defn update-digest-int [^MessageDigest digest n]
   (let [b4 (bit-and n 0xFF)

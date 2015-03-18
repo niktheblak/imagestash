@@ -1,4 +1,4 @@
-(ns imagestash.stash-nio
+(ns imagestash.image-io
   (:import [java.util Arrays]
            [java.nio ByteBuffer]
            [java.nio.channels FileChannel]

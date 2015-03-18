@@ -2,7 +2,7 @@
   (:import [java.io File]
            [imagestash.j Base58])
   (:require [imagestash.digest :as d]
-            [imagestash.stash-nio :as snio]
+            [imagestash.image-io :as iio]
             [imagestash.index :as index]
             [imagestash.resize :as resize]
             [imagestash.format :as format]
@@ -51,7 +51,7 @@
 (defn get-image [{:keys [index storage]} {:keys [key size format]}]
   (let [index-key (index/->IndexKey key size format)]
     (if-let [image-pointer (get index index-key)]
-      (snio/read-image-from-file storage (:offset image-pointer) (:size image-pointer))
+      (iio/read-image-from-file storage (:offset image-pointer) (:size image-pointer))
       nil)))
 
 (defn add-image [broker {:keys [key size format source] :as image}]
@@ -65,6 +65,6 @@
           index-key (index/->IndexKey key size format)
           resized-image-data (resize/resize-image source size format)
           resized-image (assoc image :data resized-image-data)
-          stored-image (snio/write-image-to-file storage resized-image)
+          stored-image (iio/write-image-to-file storage resized-image)
           index-value (index/->IndexValue (:offset stored-image) (:storage-size stored-image))]
       (assoc-in broker [:index index-key] index-value))))

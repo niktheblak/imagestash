@@ -1,6 +1,6 @@
 (ns imagestash.index-test
   (:require [clojure.test :refer :all]
-            [imagestash.stash-nio :as stash]
+            [imagestash.image-io :as stash]
             [imagestash.test-utils :refer :all]
             [imagestash.index :refer :all]))
 

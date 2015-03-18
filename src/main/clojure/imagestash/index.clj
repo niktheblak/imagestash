@@ -3,7 +3,7 @@
            [clojure.lang Keyword]
            [imagestash.j FileChannels])
   (:require [imagestash.stash-core :as stash]
-            [imagestash.stash-nio :as nio]
+            [imagestash.image-io :as iio]
             [clojure.java.io :as jio]))
 
 (defrecord IndexKey [^String key ^Long size ^Keyword format])
@@ -50,7 +50,7 @@
     (loop [position 0
            images (transient {})]
       (if (< position (.size channel))
-        (let [image (nio/read-image-from-channel-without-size channel position)
+        (let [image (iio/read-image-from-channel-without-size channel position)
               k (IndexKey. (:key image) (:size image) (:format image))
               v (IndexValue. position (:storage-size image))]
           (recur (+ position (:storage-size image)) (assoc! images k v)))

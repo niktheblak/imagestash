@@ -1,9 +1,9 @@
-(ns imagestash.stash-nio-test
+(ns imagestash.image-io-test
   (:import [java.util Arrays])
   (:require [clojure.test :refer :all]
             [imagestash.test-utils :refer :all]
             [imagestash.stash-core :as stash]
-            [imagestash.stash-nio :as nio]))
+            [imagestash.image-io :as nio]))
 
 (defn- divisible-by-eight [n]
   (= 0 (mod n 8)))

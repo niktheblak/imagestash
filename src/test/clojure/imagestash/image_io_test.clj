@@ -45,9 +45,9 @@
   (let [file (temp-file)]
     (testing "size-on-disk"
       (let [expected-size (core/stored-image-size test-image)
-            {:keys [storage-size]} (nio/write-image-to-file file test-image)
+            {actual-size :storage-size} (nio/write-image-to-file file test-image)
             file-size (.length file)
             read-image (nio/read-image-from-file file 0 file-size)]
-        (is (= expected-size storage-size))
+        (is (= expected-size actual-size))
         (is (= expected-size file-size))
         (is (= expected-size (:storage-size read-image)))))))

@@ -9,6 +9,7 @@
                  [ring/ring-defaults "0.1.3"]
                  [org.clojure/tools.logging "0.3.1"]
                  [ring/ring-mock "0.2.0"]]
+  :jvm-opts ["-Djava.awt.headless=true"]
   :source-paths ["src/main/clojure"]
   :java-source-paths ["src/main/java"]
   :test-paths ["src/test/clojure"]

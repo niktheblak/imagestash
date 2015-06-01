@@ -4,6 +4,7 @@
            [java.nio.channels FileChannel]
            [imagestash.j FileChannels])
   (:require [imagestash.image-core :refer :all]
+            [imagestash.flags :as flags]
             [imagestash.format :as format]
             [imagestash.digest :as d]
             [imagestash.io :as io]))
@@ -15,16 +16,17 @@
       (.put buffer (byte 0)))))
 
 (defn- write-header-to-buffer [^ByteBuffer buffer {:keys [flags key-length size format data-length]
-                                                   :or   {flags 0}} checksum]
+                                                   :or   {flags #{}}} checksum]
   {:pre [(pos? key-length)
          (pos? data-length)
          (pos? size)
          (io/byte-array? checksum)
          (= d/digest-length (alength checksum))]}
-  (let [format-code (format-to-code (format/parse-format format))]
+  (let [format-code (format-to-code (format/parse-format format))
+        encoded-flags (flags/encode-flags flags)]
     (doto buffer
       (.put preamble-bytes)
-      (.put (unchecked-byte flags))
+      (.put encoded-flags)
       (.putShort (short size))
       (.put (byte format-code))
       (.putShort (short key-length))
@@ -32,14 +34,15 @@
       (.put checksum))))
 
 (defn- update-digest-with-header [digest {:keys [flags key-length size format data-length]
-                                          :or   {flags 0}}]
+                                          :or   {flags #{}}}]
   {:pre [(pos? key-length)
          (pos? data-length)
          (pos? size)]}
-  (let [format-code (format-to-code (format/parse-format format))]
+  (let [format-code (format-to-code (format/parse-format format))
+        encoded-flags (flags/encode-flags flags)]
     (d/update-digest digest
                      preamble-bytes
-                     flags
+                     encoded-flags
                      size
                      format-code
                      key-length
@@ -66,7 +69,7 @@
        :checksum     (d/get-digest digest)})))
 
 (defn write-image-to-file [target {:keys [flags key size format data]
-                                   :or   {flags 0} :as image}]
+                                   :or   {flags #{}} :as image}]
   {:pre [(string? key)
          (number? size)
          (format/supported-format? format)
@@ -90,14 +93,14 @@
   (let [stored-preamble (io/read-bytes-from-buffer buffer preamble-size)]
     (when-not (Arrays/equals preamble-bytes stored-preamble)
       (throw (ex-info "Invalid image preamble" {:preamble stored-preamble})))
-    (let [flags (.get buffer)
+    (let [encoded-flags (.get buffer)
           image-size (.getShort buffer)
           format-code (.get buffer)
           key-len (.getShort buffer)
           data-len (.getInt buffer)
           checksum (io/read-bytes-from-buffer buffer d/digest-length)
           image-format (code-to-format format-code)]
-      {:flags       flags
+      {:flags       (flags/decode-flags encoded-flags)
        :key-length  key-len
        :size        image-size
        :format      image-format

@@ -1,6 +1,7 @@
 (ns imagestash.digest
   (:import [java.security MessageDigest]
-           [java.util Arrays])
+           [java.util Arrays]
+           [java.nio ByteBuffer])
   (:require [imagestash.io :as io]))
 
 (defn new-digest []
@@ -14,6 +15,9 @@
   (.getDigestLength (new-digest)))
 
 (defn update-digest-int [^MessageDigest digest n]
+  {:pre [(integer? n)
+         (>= n Integer/MIN_VALUE)
+         (<= n Integer/MAX_VALUE)]}
   (let [b4 (bit-and n 0xFF)
         b3 (bit-and (bit-shift-right n 8) 0xFF)
         b2 (bit-and (bit-shift-right n 16) 0xFF)
@@ -29,18 +33,22 @@
     (cond
       (and (integer? data) (<= data 255)) (.update digest (unchecked-byte data))
       (integer? data) (update-digest-int digest data)
+      (instance? ByteBuffer data) (.update digest data)
       :else (.update digest (io/to-bytes data)))))
 
 (defn digest [& items]
-  {:post [(io/byte-array? %)]}
+  {:post [(io/byte-array? %)
+          (= digest-length (alength %))]}
   (let [digest (new-digest)]
     (doseq [item items]
       (update-digest digest item))
     (.digest digest)))
 
-(defn verify-checksum [expected-checksum actual-checksum key]
+(defn verify-checksum [expected-checksum actual-checksum]
   {:pre [(io/byte-array? expected-checksum)
          (io/byte-array? actual-checksum)
          (= digest-length (alength expected-checksum) (alength actual-checksum))]}
   (when-not (Arrays/equals expected-checksum actual-checksum)
-    (throw (ex-info "Checksum does not match" {:key key}))))
+    (throw (ex-info "Checksum does not match"
+                    {:expected-checksum (Arrays/toString expected-checksum)
+                     :actual-checksum   (Arrays/toString actual-checksum)}))))

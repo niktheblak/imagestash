@@ -108,17 +108,16 @@
   (let [digest (d/new-digest)
         original-pos (.position buffer)
         header (read-header-from-buffer buffer)
-        _ (update-digest-with-header digest header)
         key-bytes (io/read-bytes-from-buffer buffer (:key-length header))
         image-key (String. key-bytes charset)
         image-data (io/read-bytes-from-buffer buffer (:data-length header))
         padding-len (padding-amount (.position buffer))
         _ (io/skip-buffer buffer padding-len)
         storage-size (- (.position buffer) original-pos)
-        _ (d/update-digest digest key-bytes image-data)
-        checksum (:checksum header)
-        expected-checksum (d/get-digest digest)]
-    (d/verify-checksum expected-checksum checksum key)
+        checksum (:checksum header)]
+    (update-digest-with-header digest header)
+    (d/update-digest digest key-bytes image-data)
+    (d/verify-checksum (d/get-digest digest) checksum)
     (assoc header
            :key image-key
            :data image-data
@@ -134,18 +133,17 @@
   (let [digest (d/new-digest)
         header-buffer (io/read-from-channel channel position header-size)
         header (read-header-from-buffer header-buffer)
-        _ (update-digest-with-header digest header)
         pad-amount (padding-amount (+ header-size (:key-length header) (:data-length header)))
         payload-size (+ (:key-length header) (:data-length header) pad-amount)
         payload-buffer (io/read-from-channel channel (+ position header-size) payload-size)
         key-bytes (io/read-bytes-from-buffer payload-buffer (:key-length header))
         image-key (String. key-bytes charset)
         image-data (io/read-bytes-from-buffer payload-buffer (:data-length header))
-        _ (d/update-digest digest key-bytes image-data)
         checksum (:checksum header)
-        expected-checksum (d/get-digest digest)
         storage-size (+ header-size payload-size)]
-    (d/verify-checksum expected-checksum checksum key)
+    (update-digest-with-header digest header)
+    (d/update-digest digest key-bytes image-data)
+    (d/verify-checksum (d/get-digest digest) checksum)
     (assoc header
       :key image-key
       :data image-data

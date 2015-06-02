@@ -4,12 +4,15 @@
 
 (defn encode-set [flag-values flags]
   {:pre [(sequential? flag-values)
-         (pos? (count flag-values))
+         (not-empty flag-values)
          (< (count flag-values) 64)
          (coll? flags)]}
   (reduce
     (fn [n f]
-      (bit-set n (.indexOf flag-values f)))
+      (let [index (.indexOf flag-values f)]
+        (when (= -1 index)
+          (throw (IllegalArgumentException. (str "flag-values does not contain value " f))))
+        (bit-set n index)))
     0
     flags))
 

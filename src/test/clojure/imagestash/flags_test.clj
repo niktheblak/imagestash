@@ -14,7 +14,9 @@
   (testing "encode test set correctly"
     (is (= 2r100101 (test-encode #{:a :c :f}))))
   (testing "encode decode roundtrip"
-    (is (= #{:a :c :f} (test-decode (test-encode #{:a :c :f}))))))
+    (is (= #{:a :c :f} (test-decode (test-encode #{:a :c :f})))))
+  (testing "throw on unknown flags"
+    (is (thrown? IllegalArgumentException (encode-set test-flag-values #{:a :q})))))
 
 (deftest flags-read-write-test
   (testing "encode flags correctly"

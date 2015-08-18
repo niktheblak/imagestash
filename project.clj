@@ -3,7 +3,7 @@
   :url "http://bitbucket.com/niktheblak/imagestash"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.6.0"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.imgscalr/imgscalr-lib "4.2"]
                  [compojure "1.4.0"]
                  [ring/ring-defaults "0.1.5"]

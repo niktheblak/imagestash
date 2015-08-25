@@ -6,7 +6,7 @@
 
 (def test-encode (partial encode-set test-flag-values))
 
-(def test-decode (partial decode-set test-flag-values (count test-flag-values)))
+(def test-decode (partial decode-set test-flag-values))
 
 (deftest set-read-write-test
   (testing "encode all flags set correctly"
@@ -16,7 +16,9 @@
   (testing "encode decode roundtrip"
     (is (= #{:a :c :f} (test-decode (test-encode #{:a :c :f})))))
   (testing "throw on unknown flags"
-    (is (thrown? IllegalArgumentException (encode-set test-flag-values #{:a :q})))))
+    (is (thrown? IllegalArgumentException (encode-set test-flag-values #{:a :q}))))
+  (testing "throw on too many set bits"
+    (is (thrown? IllegalArgumentException (decode-set [:a :b] 2r1111)))))
 
 (deftest flags-read-write-test
   (testing "encode flags correctly"

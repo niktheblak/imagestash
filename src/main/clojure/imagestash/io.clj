@@ -3,9 +3,8 @@
            [java.util Arrays]
            [java.nio.charset Charset]
            [java.nio ByteBuffer]
-           [java.nio.channels FileChannel]))
-
-(def default-charset (Charset/forName "UTF-8"))
+           [java.nio.channels FileChannel])
+  (:require [imagestash.str-util :as str]))
 
 (defn file-exists? [^File file]
   (and
@@ -19,15 +18,11 @@
       (.isArray c)
       (identical? (.getComponentType c) Byte/TYPE))))
 
-(defn str-to-bytes [str]
-  {:pre [(string? str)]}
-  (.getBytes str default-charset))
-
 (defn to-bytes [input]
   {:post [(byte-array? %)]}
   (cond
     (byte-array? input) input
-    (string? input) (str-to-bytes input)
+    (string? input) (str/to-bytes input)
     (coll? input) (byte-array (map unchecked-byte input))
     :else (throw (ex-info "Cannot convert input to bytes" {:input input}))))
 

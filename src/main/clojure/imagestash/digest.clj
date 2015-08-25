@@ -2,7 +2,8 @@
   (:import [java.security MessageDigest]
            [java.util Arrays]
            [java.nio ByteBuffer])
-  (:require [imagestash.io :as io]))
+  (:require [imagestash.io :as io])
+  (:require [imagestash.str-util :as str]))
 
 (defn new-digest []
   (MessageDigest/getInstance "MD5"))
@@ -50,5 +51,5 @@
          (= digest-length (alength expected-checksum) (alength actual-checksum))]}
   (when-not (Arrays/equals expected-checksum actual-checksum)
     (throw (ex-info "Checksum does not match"
-                    {:expected-checksum (Arrays/toString expected-checksum)
-                     :actual-checksum   (Arrays/toString actual-checksum)}))))
+                    {:expected-checksum (str/format-bytes expected-checksum)
+                     :actual-checksum   (str/format-bytes actual-checksum)}))))

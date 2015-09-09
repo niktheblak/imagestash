@@ -1,36 +1,36 @@
-# image-resizer
+image-resizer
+=============
 
-FIXME: description
+An image thumbnail generation system that is built on Clojure and Compojure.
+
+- Provides an image broker actor that fetches the requested image, resizes it, caches it to a Facebook Haystack-style cache and returns the cached version on subsequent requests
+- Scalable
+- Capable of handling large amounts of image traffic
 
 ## Installation
 
-Download from http://example.com/FIXME.
+Clone the repository
+
+    $ git clone https://niktheblak@bitbucket.org/niktheblak/imagestash.git
 
 ## Usage
 
-FIXME: explanation
+Start the service with Leiningen:
 
-    $ java -jar image-resizer-0.1.0-standalone.jar [args]
+    $ lein ring server-headless
 
-## Options
+After this the service exposes a web API at http://localhost:8080/resize. The API takes the following parameters:
 
-FIXME: listing of options this app accepts.
+| Name   | Type    | Required | Description                                   |
+|--------|-------- |----------|-----------------------------------------------|
+| source | String  | x        | URL of the source image                       |
+| size   | Integer | x        | Desired size of the image                     |
+| format | String  |          | Desired image format (`jpeg`, `png` or `gif`) |
 
-## Examples
+For example:
 
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+    http://localhost:8080/resize?source=https://channelcloud-a.akamaihd.net/mobilevideopanel_2c9314d9aa5f4c4a_364x618_29ada748cb59b5dd.JPEG&size=800
 
 ## License
 
-Copyright © 2014 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Copyright © 2015 Niko Korhonen

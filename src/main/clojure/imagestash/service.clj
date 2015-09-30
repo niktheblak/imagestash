@@ -7,6 +7,7 @@
             [imagestash.url :as url]
             [ring.util.http-response :refer :all]
             [compojure.api.sweet :refer :all]
+            [compojure.api.middleware :as mw]
             [schema.core :as s]
             [clojure.tools.logging :as log]))
 
@@ -75,6 +76,7 @@
     (br/get-image @broker image-source)))
 
 (defapi app
+        (middlewares [mw/api-middleware])
         (swagger-ui)
         (swagger-docs)
         (GET* "/resize" []

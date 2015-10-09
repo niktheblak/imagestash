@@ -13,7 +13,7 @@
   :java-source-paths ["src/main/java"]
   :test-paths ["src/test/clojure"]
   :target-path "target/%s"
-  :plugins [[lein-ring "0.9.6"]]
+  :plugins [[lein-ring "0.9.7"]]
   :ring {:handler imagestash.service/app
          :port 8080
          :init imagestash.service/start

@@ -76,15 +76,15 @@
     (br/get-image @broker image-source)))
 
 (defapi app
-        (middlewares [mw/api-middleware])
-        (swagger-ui)
-        (swagger-docs)
-        (GET* "/resize" []
-              :query-params [source :- s/Str, size :- s/Int, {format :- s/Str "jpeg"}]
-              :summary "return image from specified source resized to desired size"
-              (let [request {:source source
-                             :size size
-                             :format (fmt/parse-format format)}]
-                (if-let [image (fetch-from-remote-source request)]
-                  (render-image image)
-                  (not-found (str "Image with key " key " not found"))))))
+  (middlewares [mw/api-middleware])
+  (swagger-ui)
+  (swagger-docs)
+  (GET* "/resize" []
+        :query-params [source :- s/Str, size :- s/Int, {format :- s/Str "jpeg"}]
+        :summary "return image from specified source resized to desired size"
+        (let [request {:source source
+                       :size size
+                       :format (fmt/parse-format format)}]
+          (if-let [image (fetch-from-remote-source request)]
+            (render-image image)
+            (not-found (str "Image with key " key " not found"))))))

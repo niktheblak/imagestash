@@ -1,7 +1,6 @@
 (ns imagestash.io
   (:import [java.io InputStream File]
            [java.util Arrays]
-           [java.nio.charset Charset]
            [java.nio ByteBuffer]
            [java.nio.channels FileChannel])
   (:require [imagestash.str-util :as str]))
@@ -10,7 +9,7 @@
   (and
     (.exists file)
     (.canRead file)
-    (> (.length file) 0)))
+    (pos? (.length file))))
 
 (defn byte-array? [arr]
   (let [c (class arr)]
@@ -40,7 +39,7 @@
         (Arrays/copyOfRange buf 0 pos)))))
 
 (defn read-bytes-from-buffer [^ByteBuffer buffer amount]
-  {:pre [(>= (.remaining buffer) amount)]
+  {:pre  [(>= (.remaining buffer) amount)]
    :post [(= (alength %) amount)]}
   (let [data (byte-array amount)]
     (.get buffer data)
@@ -51,7 +50,7 @@
   (.position buffer (+ (.position buffer) amount)))
 
 (defn read-from-channel [^FileChannel channel position amount]
-  {:pre [(>= (.size channel) (+ position amount))]
+  {:pre  [(>= (.size channel) (+ position amount))]
    :post [(= (.remaining %) amount)]}
   (let [buffer (ByteBuffer/allocate amount)
         bytes-read (.read channel buffer position)]

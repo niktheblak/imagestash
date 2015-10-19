@@ -80,11 +80,20 @@
   (swagger-ui)
   (swagger-docs)
   (GET* "/resize" []
-        :query-params [source :- s/Str, size :- s/Int, {format :- s/Str "jpeg"}]
-        :summary "return image from specified source resized to desired size"
-        (let [request {:source source
+    :query-params [{source :- s/Str nil}, {key :- s/Str nil}, size :- s/Int, {format :- s/Str "jpeg"}]
+    :summary "return image from specified source resized to desired size"
+    (let [parsed-format (fmt/parse-format format)]
+      (when-not (or key source)
+        (bad-request! "Parameter key or source must be specified"))
+      (if key
+        (if-let [image (fetch-from-local-source
+                         {:key key
+                          :size size
+                          :format parsed-format})]
+          (render-image image)
+          (not-found (str "Image with key " key " not found")))
+        (let [image (fetch-from-remote-source
+                      {:source source
                        :size size
-                       :format (fmt/parse-format format)}]
-          (if-let [image (fetch-from-remote-source request)]
-            (render-image image)
-            (not-found (str "Image with key " key " not found"))))))
+                       :format parsed-format})]
+          (render-image image))))))

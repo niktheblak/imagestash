@@ -7,7 +7,8 @@
             [imagestash.flags :as flags]
             [imagestash.format :as format]
             [imagestash.digest :as d]
-            [imagestash.io :as io]))
+            [imagestash.io :as io]
+            [imagestash.types :refer :all]))
 
 (defn- write-padding-buffer [^ByteBuffer buffer]
   (let [pos (.position buffer)
@@ -20,7 +21,7 @@
   {:pre [(pos? key-length)
          (pos? data-length)
          (pos? size)
-         (io/byte-array? checksum)
+         (byte-array? checksum)
          (= d/digest-length (alength checksum))]}
   (let [format-code (format-to-code (format/parse-format format))
         encoded-flags (flags/encode-flags flags)]
@@ -73,7 +74,7 @@
   {:pre [(string? key)
          (number? size)
          (format/supported-format? format)
-         (io/byte-array? data)]}
+         (byte-array? data)]}
   (with-open [channel (FileChannels/append target)]
     (assert (= (.size channel) (.position channel))
             "Channel is not opened at file end")

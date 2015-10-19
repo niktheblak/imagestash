@@ -2,8 +2,9 @@
   (:import [java.security MessageDigest]
            [java.util Arrays]
            [java.nio ByteBuffer])
-  (:require [imagestash.io :as io])
-  (:require [imagestash.str-util :as str]))
+  (:require [imagestash.io :as io]
+            [imagestash.str-util :as str]
+            [imagestash.types :refer :all]))
 
 (defn new-digest []
   (MessageDigest/getInstance "MD5"))
@@ -38,7 +39,7 @@
       :else (.update digest (io/to-bytes data)))))
 
 (defn digest [& items]
-  {:post [(io/byte-array? %)
+  {:post [(byte-array? %)
           (= digest-length (alength %))]}
   (let [digest (new-digest)]
     (doseq [item items]
@@ -46,8 +47,8 @@
     (.digest digest)))
 
 (defn verify-checksum [expected-checksum actual-checksum]
-  {:pre [(io/byte-array? expected-checksum)
-         (io/byte-array? actual-checksum)
+  {:pre [(byte-array? expected-checksum)
+         (byte-array? actual-checksum)
          (= digest-length (alength expected-checksum) (alength actual-checksum))]}
   (when-not (Arrays/equals expected-checksum actual-checksum)
     (throw (ex-info "Checksum does not match"

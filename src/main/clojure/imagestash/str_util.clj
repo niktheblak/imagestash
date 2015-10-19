@@ -1,5 +1,6 @@
 (ns imagestash.str-util
-  (:import [java.nio.charset Charset]))
+  (:import [java.nio.charset Charset])
+  (:require [imagestash.types :refer :all]))
 
 (def default-charset (Charset/forName "UTF-8"))
 
@@ -33,8 +34,20 @@
 (defn hexify [n]
   (pad (Long/toHexString (long n)) 2 \0))
 
+(defn- hex-stringify [arr]
+  (apply str (map #(hexify %) arr)))
+
+(defn- long? [n]
+  (and
+    (integer? n)
+    (>= n Long/MIN_VALUE)
+    (<= n Long/MAX_VALUE)))
+
 (defn format-bytes [arr]
   {:post [(string? %)]}
-  (if (coll? arr)
-    (apply str (map #(hexify %) arr))
-    (hexify arr)))
+  (cond
+    (byte-array? arr) (hex-stringify arr)
+    (coll? arr) (hex-stringify arr)
+    (long? arr) (hexify arr)
+    (number? arr) (hex-stringify (.toByteArray (biginteger arr)))
+    :else (throw (IllegalArgumentException. (str "Cannot format value " arr)))))

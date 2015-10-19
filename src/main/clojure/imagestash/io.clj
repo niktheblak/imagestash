@@ -3,19 +3,14 @@
            [java.util Arrays]
            [java.nio ByteBuffer]
            [java.nio.channels FileChannel])
-  (:require [imagestash.str-util :as str]))
+  (:require [imagestash.str-util :as str]
+            [imagestash.types :refer :all]))
 
 (defn file-exists? [^File file]
   (and
     (.exists file)
     (.canRead file)
     (pos? (.length file))))
-
-(defn byte-array? [arr]
-  (let [c (class arr)]
-    (and
-      (.isArray c)
-      (identical? (.getComponentType c) Byte/TYPE))))
 
 (defn to-bytes [input]
   {:post [(byte-array? %)]}

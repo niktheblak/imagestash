@@ -4,7 +4,9 @@
            [java.io ByteArrayOutputStream File]
            [java.net URL URI MalformedURLException]
            [org.imgscalr Scalr])
-  (:require [imagestash.format :as format]))
+  (:require [imagestash.format :as format]
+            [imagestash.io :as io]
+            [imagestash.url :as url]))
 
 (defmacro with-image [bindings & body]
   (assert (vector? bindings))
@@ -23,12 +25,11 @@
 (defmethod to-readable-source URI [source] (.toURL source))
 (defmethod to-readable-source File [source] source)
 (defmethod to-readable-source String [source]
-  (try (URL. source)
-     (catch MalformedURLException e
-       (let [file (File. source)]
-         (if (.exists file)
-           file
-           nil)))))
+  (if-let [url (url/to-url source)]
+    url
+    (if-let [file (io/to-file source)]
+      file
+      nil)))
 (defmethod to-readable-source :default [x] nil)
 
 (defn- read-from [source]

@@ -25,5 +25,5 @@
     (is (instance? URL (to-url (URI. test-url)))))
   (testing "should convert plain string to URL"
     (is (instance? URL (to-url test-url))))
-  (testing "should throw on unknown input"
-    (is (thrown-with-msg? RuntimeException #"Unsupported source" (to-url 6)))))
+  (testing "should return nil on unknown input"
+    (is (nil? (to-url 6)))))

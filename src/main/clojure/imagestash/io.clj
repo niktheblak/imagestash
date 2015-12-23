@@ -12,6 +12,18 @@
     (.canRead file)
     (pos? (.length file))))
 
+(defn to-file [source]
+  (cond
+    (and
+      (instance? File source)
+      (file-exists? source)) source
+    (string? source)
+      (let [file (File. source)]
+        (if (file-exists? file)
+          file
+          nil))
+    :else nil))
+
 (defn to-bytes [input]
   {:post [(byte-array? %)]}
   (cond

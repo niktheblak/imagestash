@@ -12,20 +12,25 @@
     (java-url? source)
     (java-uri? source)))
 
+(defn parses-to-url? [source]
+  (try
+    (URL. source)
+    true
+    (catch MalformedURLException e false)))
+
 (defn to-url [source]
   (cond
     (java-url? source) source
     (java-uri? source) (.toURL source)
-    (string? source) (URL. source)
-    :else (throw (ex-info "Unsupported source" {:source source}))))
+    (and
+      (string? source)
+      (parses-to-url? source)) (URL. source)
+    :else nil))
 
 (defn url? [source]
   (cond
     (java-url-like? source) true
     (and
       (string? source)
-      (not (.isEmpty source))) (try
-                                 (URL. source)
-                                 true
-                                 (catch MalformedURLException e false))
+      (not (.isEmpty source))) (parses-to-url? source)
     :else false))

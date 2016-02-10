@@ -8,6 +8,7 @@
             [ring.util.http-response :refer :all]
             [compojure.api.sweet :refer :all]
             [compojure.api.middleware :as mw]
+            [compojure.api.swagger :as swag]
             [schema.core :as s]
             [clojure.tools.logging :as log]))
 
@@ -76,10 +77,10 @@
     (br/get-image @broker image-source)))
 
 (defapi app
-  (middlewares [mw/api-middleware])
-  (swagger-ui)
-  (swagger-docs)
-  (GET* "/resize" []
+  (middleware [mw/api-middleware])
+  (swag/swagger-ui)
+  (swag/swagger-docs)
+  (GET "/resize" []
     :query-params [{source :- s/Str nil}, {key :- s/Str nil}, size :- s/Int, {format :- s/Str "jpeg"}]
     :summary "return image from specified source resized to desired size"
     (let [parsed-format (fmt/parse-format format)]

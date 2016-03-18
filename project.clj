@@ -16,6 +16,10 @@
   :target-path "target/%s"
   :plugins [[lein-ring "0.9.7"]]
   :uberjar-name "server.jar"
+  :profiles {:uberjar {:resource-paths ["swagger-ui"]
+                       :aot :all
+                       :jvm-opts ["-Dclojure.compiler.direct-linking=true"
+                                  "-Dclojure.compiler.elide-meta=[:doc :file :line :added]"]}}
   :ring {:handler imagestash.service/app
          :port 8080
          :init imagestash.service/start

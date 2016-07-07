@@ -5,9 +5,9 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.imgscalr/imgscalr-lib "4.2"]
-                 [metosin/compojure-api "1.1.0"]
-                 [ring/ring-mock "0.3.0"]
-                 [clj-time "0.11.0"]
+                 [metosin/compojure-api "1.1.3"]
+                 [metosin/ring-http-response "0.8.0"]
+                 [clj-time "0.12.0"]
                  [org.clojure/tools.logging "0.3.1"]]
   :jvm-opts ["-Djava.awt.headless=true"]
   :source-paths ["src/main/clojure"]

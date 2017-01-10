@@ -11,7 +11,7 @@ An image thumbnail generation system that is built on Clojure and Compojure.
 
 Clone the repository
 
-    $ git clone https://niktheblak@bitbucket.org/niktheblak/imagestash.git
+    $ git clone https://github.com/niktheblak/imagestash.git
 
 ## Usage
 

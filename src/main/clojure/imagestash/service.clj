@@ -92,8 +92,7 @@
 
 (defapi app
   (middleware [mw/api-middleware])
-  (swag/swagger-ui)
-  (swag/swagger-docs)
+  (swag/swagger-routes)
   (GET "/resize" []
     :query-params [{source :- s/Str nil}, {key :- s/Str nil}, size :- s/Int, {format :- s/Str "jpeg"}]
     :summary "return image from specified source resized to desired size"

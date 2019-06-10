@@ -3,18 +3,18 @@
   :url "http://bitbucket.com/niktheblak/imagestash"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.imgscalr/imgscalr-lib "4.2"]
-                 [metosin/compojure-api "1.1.11"]
-                 [metosin/ring-http-response "0.9.0"]
-                 [clj-time "0.14.0"]
-                 [org.clojure/tools.logging "0.4.0"]]
+                 [metosin/compojure-api "1.1.12"]
+                 [metosin/ring-http-response "0.9.1"]
+                 [clj-time "0.15.1"]
+                 [org.clojure/tools.logging "0.4.1"]]
   :jvm-opts ["-Djava.awt.headless=true"]
   :source-paths ["src/main/clojure"]
   :java-source-paths ["src/main/java"]
   :test-paths ["src/test/clojure"]
   :target-path "target/%s"
-  :plugins [[lein-ring "0.12.4"]]
+  :plugins [[lein-ring "0.12.5"]]
   :uberjar-name "server.jar"
   :profiles {:uberjar {:resource-paths ["swagger-ui"]
                        :aot :all

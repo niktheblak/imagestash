@@ -1,4 +1,4 @@
-image-resizer
+imagestash
 =============
 
 An image thumbnail generation system that is built on Clojure and Compojure.

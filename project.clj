@@ -14,7 +14,7 @@
   :java-source-paths ["src/main/java"]
   :test-paths ["src/test/clojure"]
   :target-path "target/%s"
-  :plugins [[lein-ring "0.12.5"]]
+  :plugins [[lein-ring "0.12.6"]]
   :uberjar-name "server.jar"
   :profiles {:uberjar {:resource-paths ["swagger-ui"]
                        :aot :all

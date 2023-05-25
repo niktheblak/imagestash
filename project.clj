@@ -7,7 +7,7 @@
                  [org.imgscalr/imgscalr-lib "4.2"]
                  [metosin/compojure-api "1.1.12"]
                  [metosin/ring-http-response "0.9.1"]
-                 [clj-time "0.15.1"]
+                 [clj-time "0.15.2"]
                  [org.clojure/tools.logging "0.4.1"]]
   :jvm-opts ["-Djava.awt.headless=true"]
   :source-paths ["src/main/clojure"]

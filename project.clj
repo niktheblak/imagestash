@@ -8,7 +8,7 @@
                  [metosin/compojure-api "1.1.13"]
                  [metosin/ring-http-response "0.9.3"]
                  [clj-time "0.15.2"]
-                 [org.clojure/tools.logging "1.2.4"]]
+                 [org.clojure/tools.logging "1.3.0"]]
   :jvm-opts ["-Djava.awt.headless=true"]
   :source-paths ["src/main/clojure"]
   :java-source-paths ["src/main/java"]

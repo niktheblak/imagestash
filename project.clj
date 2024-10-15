@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.12.0"]
                  [org.imgscalr/imgscalr-lib "4.2"]
-                 [metosin/compojure-api "1.1.13"]
+                 [metosin/compojure-api "1.1.14"]
                  [metosin/ring-http-response "0.9.3"]
                  [clj-time "0.15.2"]
                  [org.clojure/tools.logging "1.3.0"]]

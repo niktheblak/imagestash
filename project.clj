@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.12.0"]
                  [org.imgscalr/imgscalr-lib "4.2"]
                  [metosin/compojure-api "1.1.14"]
-                 [metosin/ring-http-response "0.9.3"]
+                 [metosin/ring-http-response "0.9.4"]
                  [clj-time "0.15.2"]
                  [org.clojure/tools.logging "1.3.0"]]
   :jvm-opts ["-Djava.awt.headless=true"]
